@@ -19,14 +19,17 @@ import (
 	"path"
 	"testing"
 
+	"github.com/dynatrace-oss/dynatrace-metric-utils-go/metric/apiconstants"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.uber.org/zap"
 
 	dtconfig "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter/config"
 )
@@ -44,7 +47,8 @@ func TestCreateDefaultConfig(t *testing.T) {
 			Enabled: false,
 		},
 
-		Tags: []string{},
+		Tags:              []string{},
+		DefaultDimensions: make(map[string]string),
 	}, cfg, "failed to create default config")
 
 	assert.NoError(t, configcheck.ValidateConfig(cfg))
@@ -62,8 +66,26 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	apiConfig := cfg.Exporters[config.NewIDWithName(typeStr, "valid")].(*dtconfig.Config)
-	err = apiConfig.Sanitize()
+	defaultConfig := cfg.Exporters[config.NewIDWithName(typeStr, "defaults")].(*dtconfig.Config)
+	err = defaultConfig.Sanitize()
+	require.NoError(t, err)
+	assert.Equal(t, &dtconfig.Config{
+		ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "defaults")),
+		RetrySettings:    exporterhelper.DefaultRetrySettings(),
+		QueueSettings:    exporterhelper.DefaultQueueSettings(),
+
+		HTTPClientSettings: confighttp.HTTPClientSettings{
+			Endpoint: apiconstants.GetDefaultOneAgentEndpoint(),
+			Headers: map[string]string{
+				"Content-Type": "text/plain; charset=UTF-8",
+				"User-Agent":   "opentelemetry-collector"},
+		},
+		Tags:              []string{},
+		DefaultDimensions: map[string]string{},
+	}, defaultConfig)
+
+	validConfig := cfg.Exporters[config.NewIDWithName(typeStr, "valid")].(*dtconfig.Config)
+	err = validConfig.Sanitize()
 
 	require.NoError(t, err)
 	assert.Equal(t, &dtconfig.Config{
@@ -82,15 +104,18 @@ func TestLoadConfig(t *testing.T) {
 
 		Prefix: "myprefix",
 
-		Tags: []string{"example=tag"},
-	}, apiConfig)
+		Tags:              []string{},
+		DefaultDimensions: map[string]string{"example": "tag"},
+	}, validConfig)
 
-	invalidConfig2 := cfg.Exporters[config.NewIDWithName(typeStr, "invalid")].(*dtconfig.Config)
-	err = invalidConfig2.Sanitize()
+	badEndpointConfig := cfg.Exporters[config.NewIDWithName(typeStr, "bad_endpoint")].(*dtconfig.Config)
+	err = badEndpointConfig.Sanitize()
 	require.Error(t, err)
 }
 
 func TestCreateAPIMetricsExporter(t *testing.T) {
+	logger := zap.NewNop()
+
 	factories, err := componenttest.NopFactories()
 	require.NoError(t, err)
 
@@ -104,7 +129,7 @@ func TestCreateAPIMetricsExporter(t *testing.T) {
 	ctx := context.Background()
 	exp, err := factory.CreateMetricsExporter(
 		ctx,
-		componenttest.NewNopExporterCreateSettings(),
+		component.ExporterCreateSettings{Logger: logger},
 		cfg.Exporters[config.NewIDWithName(typeStr, "valid")],
 	)
 
@@ -113,6 +138,8 @@ func TestCreateAPIMetricsExporter(t *testing.T) {
 }
 
 func TestCreateAPIMetricsExporterInvalid(t *testing.T) {
+	logger := zap.NewNop()
+
 	factories, err := componenttest.NopFactories()
 	require.NoError(t, err)
 
@@ -126,8 +153,8 @@ func TestCreateAPIMetricsExporterInvalid(t *testing.T) {
 	ctx := context.Background()
 	exp, err := factory.CreateMetricsExporter(
 		ctx,
-		componenttest.NewNopExporterCreateSettings(),
-		cfg.Exporters[config.NewIDWithName(typeStr, "invalid")],
+		component.ExporterCreateSettings{Logger: logger},
+		cfg.Exporters[config.NewIDWithName(typeStr, "bad_endpoint")],
 	)
 
 	assert.Error(t, err)
