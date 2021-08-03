@@ -52,7 +52,8 @@ func createDefaultConfig() config.Exporter {
 		APIToken:           "",
 		HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ""},
 
-		Tags: []string{},
+		Tags:              []string{},
+		DefaultDimensions: make(map[string]string),
 	}
 }
 
