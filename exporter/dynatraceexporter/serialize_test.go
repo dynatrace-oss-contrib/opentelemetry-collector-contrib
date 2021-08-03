@@ -1,0 +1,105 @@
+// Copyright The OpenTelemetry Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package dynatraceexporter
+
+import (
+	"testing"
+	"time"
+
+	"github.com/dynatrace-oss/dynatrace-metric-utils-go/metric/dimensions"
+	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/model/pdata"
+)
+
+func Test_serializeIntGauge(t *testing.T) {
+	dp := pdata.NewIntDataPoint()
+	dp.SetValue(5)
+	dp.SetTimestamp(pdata.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
+
+	t.Run("with prefix and dimension", func(t *testing.T) {
+		got, err := serializeIntGauge("int_gauge", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), dp)
+		assert.NoError(t, err)
+		assert.Equal(t, "prefix.int_gauge,key=value gauge,5 1626438600000", got)
+	})
+}
+
+func Test_serializeGauge(t *testing.T) {
+	dp := pdata.NewNumberDataPoint()
+	dp.SetValue(5.5)
+	dp.SetTimestamp(pdata.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
+
+	t.Run("with prefix and dimension", func(t *testing.T) {
+		got, err := serializeGauge("dbl_gauge", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), dp)
+		assert.NoError(t, err)
+		assert.Equal(t, "prefix.dbl_gauge,key=value gauge,5.5 1626438600000", got)
+	})
+}
+
+func Test_serializeIntSum(t *testing.T) {
+	dp := pdata.NewIntDataPoint()
+	dp.SetValue(5)
+	dp.SetTimestamp(pdata.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
+
+	t.Run("delta with prefix and dimension", func(t *testing.T) {
+		got, err := serializeIntSum("int_sum", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), pdata.AggregationTemporalityDelta, dp)
+		assert.NoError(t, err)
+		assert.Equal(t, "prefix.int_sum,key=value count,delta=5 1626438600000", got)
+	})
+
+	t.Run("cumulative with prefix and dimension", func(t *testing.T) {
+		got, err := serializeIntSum("int_sum", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), pdata.AggregationTemporalityCumulative, dp)
+		assert.NoError(t, err)
+		assert.Equal(t, "prefix.int_sum,key=value count,5 1626438600000", got)
+	})
+}
+
+func Test_serializeSum(t *testing.T) {
+	dp := pdata.NewNumberDataPoint()
+	dp.SetValue(5.5)
+	dp.SetTimestamp(pdata.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
+
+	t.Run("delta with prefix and dimension", func(t *testing.T) {
+		got, err := serializeSum("double_sum", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), pdata.AggregationTemporalityDelta, dp)
+		assert.NoError(t, err)
+		assert.Equal(t, "prefix.double_sum,key=value count,delta=5.5 1626438600000", got)
+	})
+
+	t.Run("cumulative with prefix and dimension", func(t *testing.T) {
+		got, err := serializeSum("double_sum", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), pdata.AggregationTemporalityCumulative, dp)
+		assert.NoError(t, err)
+		assert.Equal(t, "prefix.double_sum,key=value count,5.5 1626438600000", got)
+	})
+}
+
+func Test_serializeHistogram(t *testing.T) {
+	dp := pdata.NewHistogramDataPoint()
+	dp.SetExplicitBounds([]float64{0, 2, 4, 8})
+	dp.SetBucketCounts([]uint64{0, 1, 0, 1, 0})
+	dp.SetCount(2)
+	dp.SetSum(9.5)
+	dp.SetTimestamp(pdata.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
+
+	t.Run("delta with prefix and dimension", func(t *testing.T) {
+		got, err := serializeHistogram("delta_hist", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), pdata.AggregationTemporalityDelta, dp)
+		assert.NoError(t, err)
+		assert.Equal(t, "prefix.delta_hist,key=value gauge,min=0,max=8,sum=9.5,count=2 1626438600000", got)
+	})
+
+	t.Run("cumulative with prefix and dimension", func(t *testing.T) {
+		got, err := serializeHistogram("hist", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), pdata.AggregationTemporalityCumulative, dp)
+		assert.Error(t, err)
+		assert.Equal(t, "", got)
+	})
+}
