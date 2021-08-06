@@ -44,7 +44,7 @@ type Config struct {
 	Prefix string `mapstructure:"prefix"`
 
 	// Tags will be added to all exported metrics
-	// Deprecated: Please use DefaultDimensions
+	// Deprecated: Please use DefaultDimensions instead
 	Tags []string `mapstructure:"tags"`
 }
 

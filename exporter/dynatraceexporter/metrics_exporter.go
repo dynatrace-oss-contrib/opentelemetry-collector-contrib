@@ -88,6 +88,7 @@ func (e *exporter) PushMetricsData(ctx context.Context, md pdata.Metrics) error 
 	return nil
 }
 
+// for backwards-compatibility with deprecated `Tags` config option
 func dimensionsFromTags(tags []string) dimensions.NormalizedDimensionList {
 	dims := []dimensions.Dimension{}
 	for _, tag := range tags {
@@ -114,7 +115,7 @@ func (e *exporter) serializeMetrics(md pdata.Metrics) []string {
 				metric := metrics.At(k)
 				metricLines, err := e.serializeMetric(metric)
 				if err != nil {
-					e.logger.Sugar().Warnf("failed to serialize int gauge %s - %s", metric.Name(), err.Error())
+					e.logger.Sugar().Warnf("failed to serialize %s '%s' - %s", metric.DataType().String(), metric.Name(), err.Error())
 				}
 
 				if metricLines == nil {

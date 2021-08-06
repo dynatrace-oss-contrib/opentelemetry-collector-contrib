@@ -10,7 +10,7 @@ exporters:
     endpoint: not a url
   dynatrace/valid:
     default_dimensions:
-      example: tag
+      example: default_dimension_value
 
     prefix: myprefix
 
