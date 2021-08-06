@@ -48,8 +48,8 @@ type Config struct {
 	Tags []string `mapstructure:"tags"`
 }
 
-// Sanitize ensures an API token has been provided
-func (c *Config) Sanitize() error {
+// ValidateAndConfigureHTTPClientSettings validates the configuration and sets default values
+func (c *Config) ValidateAndConfigureHTTPClientSettings() error {
 	if c.HTTPClientSettings.Headers == nil {
 		c.HTTPClientSettings.Headers = make(map[string]string)
 	}

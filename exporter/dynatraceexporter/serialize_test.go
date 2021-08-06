@@ -84,21 +84,34 @@ func Test_serializeSum(t *testing.T) {
 }
 
 func Test_serializeHistogram(t *testing.T) {
-	dp := pdata.NewHistogramDataPoint()
-	dp.SetExplicitBounds([]float64{0, 2, 4, 8})
-	dp.SetBucketCounts([]uint64{0, 1, 0, 1, 0})
-	dp.SetCount(2)
-	dp.SetSum(9.5)
-	dp.SetTimestamp(pdata.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
+	hist := pdata.NewHistogramDataPoint()
+	hist.SetExplicitBounds([]float64{0, 2, 4, 8})
+	hist.SetBucketCounts([]uint64{0, 1, 0, 1, 0})
+	hist.SetCount(2)
+	hist.SetSum(9.5)
+	hist.SetTimestamp(pdata.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
+
+	histWithNonEmptyFirstLast := pdata.NewHistogramDataPoint()
+	histWithNonEmptyFirstLast.SetExplicitBounds([]float64{0, 2, 4, 8})
+	histWithNonEmptyFirstLast.SetBucketCounts([]uint64{0, 1, 0, 1, 1})
+	histWithNonEmptyFirstLast.SetCount(3)
+	histWithNonEmptyFirstLast.SetSum(9.5)
+	histWithNonEmptyFirstLast.SetTimestamp(pdata.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
 
 	t.Run("delta with prefix and dimension", func(t *testing.T) {
-		got, err := serializeHistogram("delta_hist", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), pdata.AggregationTemporalityDelta, dp)
+		got, err := serializeHistogram("delta_hist", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), pdata.AggregationTemporalityDelta, hist)
 		assert.NoError(t, err)
 		assert.Equal(t, "prefix.delta_hist,key=value gauge,min=0,max=8,sum=9.5,count=2 1626438600000", got)
 	})
 
+	t.Run("delta with non-empty first and last bucket", func(t *testing.T) {
+		got, err := serializeHistogram("delta_nonempty_first_last_hist", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), pdata.AggregationTemporalityDelta, histWithNonEmptyFirstLast)
+		assert.NoError(t, err)
+		assert.Equal(t, "prefix.delta_nonempty_first_last_hist,key=value gauge,min=0,max=8,sum=9.5,count=3 1626438600000", got)
+	})
+
 	t.Run("cumulative with prefix and dimension", func(t *testing.T) {
-		got, err := serializeHistogram("hist", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), pdata.AggregationTemporalityCumulative, dp)
+		got, err := serializeHistogram("hist", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), pdata.AggregationTemporalityCumulative, hist)
 		assert.Error(t, err)
 		assert.Equal(t, "", got)
 	})

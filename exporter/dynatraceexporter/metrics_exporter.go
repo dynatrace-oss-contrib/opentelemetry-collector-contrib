@@ -130,15 +130,15 @@ func (e *exporter) serializeMetrics(md pdata.Metrics) []string {
 	return lines
 }
 
-func (e *exporter) dimensions(labels pdata.StringMap) dimensions.NormalizedDimensionList {
-	dims := []dimensions.Dimension{}
+func (e *exporter) makeCombinedDimensions(labels pdata.StringMap) dimensions.NormalizedDimensionList {
+	dimsFromLabels := []dimensions.Dimension{}
 	labels.Range(func(k, v string) bool {
-		dims = append(dims, dimensions.NewDimension(k, v))
+		dimsFromLabels = append(dimsFromLabels, dimensions.NewDimension(k, v))
 		return true
 	})
 	return dimensions.MergeLists(
 		e.defaultDimensions,
-		dimensions.NewNormalizedDimensionList(dims...),
+		dimensions.NewNormalizedDimensionList(dimsFromLabels...),
 		e.staticDimensions,
 	)
 }
@@ -149,13 +149,13 @@ func (e *exporter) serializeMetric(metric pdata.Metric) ([]string, error) {
 	case pdata.MetricDataTypeNone:
 		return nil, nil
 	case pdata.MetricDataTypeIntGauge:
-		for x := 0; x < metric.IntGauge().DataPoints().Len(); x++ {
-			dp := metric.IntGauge().DataPoints().At(x)
+		for i := 0; i < metric.IntGauge().DataPoints().Len(); i++ {
+			dp := metric.IntGauge().DataPoints().At(i)
 
 			line, err := serializeIntGauge(
 				metric.Name(),
 				e.cfg.Prefix,
-				e.dimensions(dp.LabelsMap()),
+				e.makeCombinedDimensions(dp.LabelsMap()),
 				dp,
 			)
 
@@ -168,13 +168,13 @@ func (e *exporter) serializeMetric(metric pdata.Metric) ([]string, error) {
 			}
 		}
 	case pdata.MetricDataTypeGauge:
-		for x := 0; x < metric.Gauge().DataPoints().Len(); x++ {
-			dp := metric.Gauge().DataPoints().At(x)
+		for i := 0; i < metric.Gauge().DataPoints().Len(); i++ {
+			dp := metric.Gauge().DataPoints().At(i)
 
 			line, err := serializeGauge(
 				metric.Name(),
 				e.cfg.Prefix,
-				e.dimensions(dp.LabelsMap()),
+				e.makeCombinedDimensions(dp.LabelsMap()),
 				dp,
 			)
 
@@ -187,13 +187,13 @@ func (e *exporter) serializeMetric(metric pdata.Metric) ([]string, error) {
 			}
 		}
 	case pdata.MetricDataTypeIntSum:
-		for x := 0; x < metric.IntSum().DataPoints().Len(); x++ {
-			dp := metric.IntSum().DataPoints().At(x)
+		for i := 0; i < metric.IntSum().DataPoints().Len(); i++ {
+			dp := metric.IntSum().DataPoints().At(i)
 
 			line, err := serializeIntSum(
 				metric.Name(),
 				e.cfg.Prefix,
-				e.dimensions(dp.LabelsMap()),
+				e.makeCombinedDimensions(dp.LabelsMap()),
 				metric.IntSum().AggregationTemporality(),
 				dp,
 			)
@@ -207,13 +207,13 @@ func (e *exporter) serializeMetric(metric pdata.Metric) ([]string, error) {
 			}
 		}
 	case pdata.MetricDataTypeSum:
-		for x := 0; x < metric.Sum().DataPoints().Len(); x++ {
-			dp := metric.Sum().DataPoints().At(x)
+		for i := 0; i < metric.Sum().DataPoints().Len(); i++ {
+			dp := metric.Sum().DataPoints().At(i)
 
 			line, err := serializeSum(
 				metric.Name(),
 				e.cfg.Prefix,
-				e.dimensions(dp.LabelsMap()),
+				e.makeCombinedDimensions(dp.LabelsMap()),
 				metric.Sum().AggregationTemporality(),
 				dp,
 			)
@@ -227,13 +227,13 @@ func (e *exporter) serializeMetric(metric pdata.Metric) ([]string, error) {
 			}
 		}
 	case pdata.MetricDataTypeHistogram:
-		for x := 0; x < metric.Histogram().DataPoints().Len(); x++ {
-			dp := metric.Histogram().DataPoints().At(x)
+		for i := 0; i < metric.Histogram().DataPoints().Len(); i++ {
+			dp := metric.Histogram().DataPoints().At(i)
 
 			line, err := serializeHistogram(
 				metric.Name(),
 				e.cfg.Prefix,
-				e.dimensions(dp.LabelsMap()),
+				e.makeCombinedDimensions(dp.LabelsMap()),
 				metric.Histogram().AggregationTemporality(),
 				dp,
 			)

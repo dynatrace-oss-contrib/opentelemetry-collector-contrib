@@ -22,10 +22,10 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 )
 
-func TestConfig_Sanitize(t *testing.T) {
+func TestConfig_ValidateAndConfigureHTTPClientSettings(t *testing.T) {
 	t.Run("Empty configuration", func(t *testing.T) {
 		c := &Config{}
-		err := c.Sanitize()
+		err := c.ValidateAndConfigureHTTPClientSettings()
 		assert.NoError(t, err)
 
 		assert.Equal(t, apiconstants.GetDefaultOneAgentEndpoint(), c.Endpoint, "Should use default OneAgent endpoint")
@@ -33,7 +33,7 @@ func TestConfig_Sanitize(t *testing.T) {
 
 	t.Run("Valid configuration", func(t *testing.T) {
 		c := &Config{HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: "http://example.com/"}, APIToken: "token"}
-		err := c.Sanitize()
+		err := c.ValidateAndConfigureHTTPClientSettings()
 		assert.NoError(t, err)
 
 		assert.Equal(t, "http://example.com/", c.Endpoint, "Should use provided endpoint")
@@ -41,7 +41,7 @@ func TestConfig_Sanitize(t *testing.T) {
 
 	t.Run("Invalid Endpoint", func(t *testing.T) {
 		c := &Config{HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: "example.com"}}
-		err := c.Sanitize()
+		err := c.ValidateAndConfigureHTTPClientSettings()
 		assert.Error(t, err)
 	})
 }
