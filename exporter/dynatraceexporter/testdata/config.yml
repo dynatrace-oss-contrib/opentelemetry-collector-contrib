@@ -8,6 +8,8 @@ exporters:
   dynatrace/defaults:
   dynatrace/bad_endpoint:
     endpoint: not a url
+  dynatrace/missing_token:
+    endpoint: https://example.com
   dynatrace/valid:
     default_dimensions:
       example: default_dimension_value
