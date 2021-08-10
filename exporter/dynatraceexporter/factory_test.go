@@ -104,7 +104,7 @@ func TestLoadConfig(t *testing.T) {
 
 		Prefix: "myprefix",
 
-		Tags:              []string{},
+		Tags:              []string{"tag_example=tag_value"},
 		DefaultDimensions: map[string]string{"example": "default_dimension_value"},
 	}, validConfig)
 
