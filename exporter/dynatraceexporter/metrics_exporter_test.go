@@ -57,11 +57,9 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 	defer ts.Close()
 
 	md := pdata.NewMetrics()
-	// md.ResourceMetrics().Resize(2)
 	rm := md.ResourceMetrics().AppendEmpty()
 
 	ilms := rm.InstrumentationLibraryMetrics()
-	// ilms.Resize(2)
 	ilm := ilms.AppendEmpty()
 
 	metrics := ilm.Metrics()
@@ -235,11 +233,9 @@ func Test_exporter_PushMetricsData_dimensions(t *testing.T) {
 	defer ts.Close()
 
 	md := pdata.NewMetrics()
-	// md.ResourceMetrics().Resize(2)
 	rm := md.ResourceMetrics().AppendEmpty()
 
 	ilms := rm.InstrumentationLibraryMetrics()
-	// ilms.Resize(2)
 	ilm := ilms.AppendEmpty()
 
 	metrics := ilm.Metrics()
@@ -297,11 +293,9 @@ func Test_exporter_PushMetricsData_EmptyPayload(t *testing.T) {
 	defer ts.Close()
 
 	md := pdata.NewMetrics()
-	// md.ResourceMetrics().Resize(2)
 	rm := md.ResourceMetrics().AppendEmpty()
 
 	ilms := rm.InstrumentationLibraryMetrics()
-	// ilms.Resize(2)
 	ilm := ilms.AppendEmpty()
 
 	metrics := ilm.Metrics()
@@ -333,11 +327,9 @@ func Test_exporter_PushMetricsData_isDisabled(t *testing.T) {
 	defer ts.Close()
 
 	md := pdata.NewMetrics()
-	// md.ResourceMetrics().Resize(2)
 	rm := md.ResourceMetrics().AppendEmpty()
 
 	ilms := rm.InstrumentationLibraryMetrics()
-	// ilms.Resize(2)
 	ilm := ilms.AppendEmpty()
 
 	metrics := ilm.Metrics()
@@ -529,11 +521,9 @@ func Test_exporter_PushMetricsData_Error(t *testing.T) {
 	ts.Close()
 
 	md := pdata.NewMetrics()
-	// md.ResourceMetrics().Resize(2)
 	rm := md.ResourceMetrics().AppendEmpty()
 
 	ilms := rm.InstrumentationLibraryMetrics()
-	// ilms.Resize(2)
 	ilm := ilms.AppendEmpty()
 
 	metrics := ilm.Metrics()
