@@ -19,8 +19,9 @@ import (
 
 	dtMetric "github.com/dynatrace-oss/dynatrace-metric-utils-go/metric"
 	"github.com/dynatrace-oss/dynatrace-metric-utils-go/metric/dimensions"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/ttlmap"
 	"go.opentelemetry.io/collector/model/pdata"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/ttlmap"
 )
 
 func serializeIntGauge(name, prefix string, dims dimensions.NormalizedDimensionList, dp pdata.IntDataPoint) (string, error) {
