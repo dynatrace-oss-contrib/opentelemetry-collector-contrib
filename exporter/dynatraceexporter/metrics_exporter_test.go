@@ -25,6 +25,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/dynatrace-oss/dynatrace-metric-utils-go/metric/dimensions"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -35,6 +36,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter/config"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/ttlmap"
 )
 
 var testTimestamp = pdata.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano())
@@ -63,6 +65,20 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 	ilm := ilms.AppendEmpty()
 
 	metrics := ilm.Metrics()
+	previousMetrics := ilm.Metrics()
+
+	e := &exporter{
+		logger: zap.NewNop(),
+		cfg: &config.Config{
+			APIToken:           "token",
+			Prefix:             "prefix",
+			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ts.URL},
+		},
+		defaultDimensions: dimensions.NewNormalizedDimensionList(),
+		staticDimensions:  dimensions.NewNormalizedDimensionList(dimensions.NewDimension("dt.metrics.source", "opentelemetry")),
+		prev:              ttlmap.New(1800, 3600),
+	}
+	e.client = ts.Client()
 
 	badNameMetric := metrics.AppendEmpty()
 	badNameMetric.SetName("")
@@ -88,6 +104,28 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 	intSumDataPoint.SetValue(10)
 	intSumDataPoint.SetTimestamp(testTimestamp)
 
+	prevIntSumCumulativeMetric := previousMetrics.AppendEmpty()
+	prevIntSumCumulativeMetric.SetDataType(pdata.MetricDataTypeIntSum)
+	prevIntSumCumulativeMetric.SetName("int_sum_cumulative")
+	prevIntSumCumulative := prevIntSumCumulativeMetric.IntSum()
+	prevIntSumCumulative.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+	prevIntSumCumulativeDataPoints := prevIntSumCumulative.DataPoints()
+	prevIntSumCumulativeDataPoint := prevIntSumCumulativeDataPoints.AppendEmpty()
+	prevIntSumCumulativeDataPoint.SetValue(8)
+	prevIntSumCumulativeDataPoint.SetTimestamp(testTimestamp)
+
+	e.prev.Put(prevIntSumCumulativeMetric.Name(), prevIntSumCumulativeDataPoint)
+
+	intSumCumulativeMetric := metrics.AppendEmpty()
+	intSumCumulativeMetric.SetDataType(pdata.MetricDataTypeIntSum)
+	intSumCumulativeMetric.SetName("int_sum_cumulative")
+	intSumCumulative := intSumCumulativeMetric.IntSum()
+	intSumCumulative.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+	intSumCumulativeDataPoints := intSumCumulative.DataPoints()
+	intSumCumulativeDataPoint := intSumCumulativeDataPoints.AppendEmpty()
+	intSumCumulativeDataPoint.SetValue(10)
+	intSumCumulativeDataPoint.SetTimestamp(testTimestamp)
+
 	gaugeMetric := metrics.AppendEmpty()
 	gaugeMetric.SetDataType(pdata.MetricDataTypeGauge)
 	gaugeMetric.SetName("double_gauge")
@@ -105,6 +143,28 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 	sumDataPoint := sumDataPoints.AppendEmpty()
 	sumDataPoint.SetValue(10.1)
 	sumDataPoint.SetTimestamp(testTimestamp)
+
+	prevDblSumCumulativeMetric := previousMetrics.AppendEmpty()
+	prevDblSumCumulativeMetric.SetDataType(pdata.MetricDataTypeSum)
+	prevDblSumCumulativeMetric.SetName("dbl_sum_cumulative")
+	prevDblSumCumulative := prevDblSumCumulativeMetric.Sum()
+	prevDblSumCumulative.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+	prevDblSumCumulativeDataPoints := prevDblSumCumulative.DataPoints()
+	prevDblSumCumulativeDataPoint := prevDblSumCumulativeDataPoints.AppendEmpty()
+	prevDblSumCumulativeDataPoint.SetValue(10.0)
+	prevDblSumCumulativeDataPoint.SetTimestamp(testTimestamp)
+
+	e.prev.Put(prevIntSumCumulativeMetric.Name(), prevIntSumCumulativeDataPoint)
+
+	dblSumCumulativeMetric := metrics.AppendEmpty()
+	dblSumCumulativeMetric.SetDataType(pdata.MetricDataTypeSum)
+	dblSumCumulativeMetric.SetName("dbl_sum_cumulative")
+	dblSumCumulative := dblSumCumulativeMetric.Sum()
+	dblSumCumulative.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+	dblSumCumulativeDataPoints := dblSumCumulative.DataPoints()
+	dblSumCumulativeDataPoint := dblSumCumulativeDataPoints.AppendEmpty()
+	dblSumCumulativeDataPoint.SetValue(10.5)
+	dblSumCumulativeDataPoint.SetTimestamp(testTimestamp)
 
 	doubleHistogramMetric := metrics.AppendEmpty()
 	doubleHistogramMetric.SetDataType(pdata.MetricDataTypeHistogram)
@@ -142,13 +202,6 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 	maxBucketHistogramDataPoint.SetBucketCounts([]uint64{0, 1, 0, 0, 1})
 	maxBucketHistogramDataPoint.SetTimestamp(testTimestamp)
 
-	e := newMetricsExporter(component.ExporterCreateSettings{Logger: zap.NewNop()}, &config.Config{
-		APIToken:           "token",
-		Prefix:             "prefix",
-		HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ts.URL},
-	})
-	e.client = ts.Client()
-
 	err := e.PushMetricsData(context.Background(), md)
 	if err != nil {
 		t.Errorf("exporter.PushMetricsData() error = %v", err)
@@ -156,9 +209,11 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 	}
 
 	assert.Contains(t, sent, "prefix.int_gauge,dt.metrics.source=opentelemetry gauge,10 1626438600000")
-	assert.Contains(t, sent, "prefix.int_sum,dt.metrics.source=opentelemetry count,10 1626438600000")
+	assert.Contains(t, sent, "prefix.int_sum_cumulative,dt.metrics.source=opentelemetry count,delta=2 1626438600000")
+	assert.Contains(t, sent, "prefix.int_sum,dt.metrics.source=opentelemetry count,delta=10 1626438600000")
 	assert.Contains(t, sent, "prefix.double_gauge,dt.metrics.source=opentelemetry gauge,10.1 1626438600000")
-	assert.Contains(t, sent, "prefix.double_sum,dt.metrics.source=opentelemetry count,10.1 1626438600000")
+	assert.Contains(t, sent, "prefix.double_sum,dt.metrics.source=opentelemetry count,delta=10.1 1626438600000")
+	assert.Contains(t, sent, "prefix.dbl_sum_cumulative,dt.metrics.source=opentelemetry count,delta=0.5 1626438600000")
 	assert.Contains(t, sent, "prefix.double_histogram,dt.metrics.source=opentelemetry gauge,min=0,max=8,sum=9.5,count=2 1626438600000")
 	assert.Contains(t, sent, "prefix.min_bucket_histogram,dt.metrics.source=opentelemetry gauge,min=0,max=8,sum=3,count=2 1626438600000")
 	assert.Contains(t, sent, "prefix.max_bucket_histogram,dt.metrics.source=opentelemetry gauge,min=0,max=8,sum=20,count=2 1626438600000")

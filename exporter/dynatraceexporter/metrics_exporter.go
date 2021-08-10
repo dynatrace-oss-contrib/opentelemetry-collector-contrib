@@ -32,6 +32,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter/config"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/ttlmap"
 )
 
 // NewExporter exports to a Dynatrace Metrics v2 API
@@ -47,11 +48,15 @@ func newMetricsExporter(params component.ExporterCreateSettings, cfg *config.Con
 	)
 	staticDimensions := dimensions.NewNormalizedDimensionList(dimensions.NewDimension("dt.metrics.source", "opentelemetry"))
 
+	prevPts := ttlmap.New(1800, 3600)
+	prevPts.Start()
+
 	return &exporter{
 		logger:            params.Logger,
 		cfg:               cfg,
 		defaultDimensions: defaultDimensions,
 		staticDimensions:  staticDimensions,
+		prev:              prevPts,
 	}
 }
 
@@ -64,6 +69,7 @@ type exporter struct {
 
 	defaultDimensions dimensions.NormalizedDimensionList
 	staticDimensions  dimensions.NormalizedDimensionList
+	prev              *ttlmap.TTLMap
 }
 
 func (e *exporter) PushMetricsData(ctx context.Context, md pdata.Metrics) error {
@@ -189,13 +195,13 @@ func (e *exporter) serializeMetric(metric pdata.Metric) ([]string, error) {
 	case pdata.MetricDataTypeIntSum:
 		for i := 0; i < metric.IntSum().DataPoints().Len(); i++ {
 			dp := metric.IntSum().DataPoints().At(i)
-
 			line, err := serializeIntSum(
 				metric.Name(),
 				e.cfg.Prefix,
 				e.makeCombinedDimensions(dp.LabelsMap()),
 				metric.IntSum().AggregationTemporality(),
 				dp,
+				e.prev,
 			)
 
 			if err != nil {
@@ -216,6 +222,7 @@ func (e *exporter) serializeMetric(metric pdata.Metric) ([]string, error) {
 				e.makeCombinedDimensions(dp.LabelsMap()),
 				metric.Sum().AggregationTemporality(),
 				dp,
+				e.prev,
 			)
 
 			if err != nil {

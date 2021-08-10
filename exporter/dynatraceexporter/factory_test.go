@@ -67,7 +67,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NotNil(t, cfg)
 
 	defaultConfig := cfg.Exporters[config.NewIDWithName(typeStr, "defaults")].(*dtconfig.Config)
-	err = defaultConfig.Sanitize()
+	err = defaultConfig.ValidateAndConfigureHTTPClientSettings()
 	require.NoError(t, err)
 	assert.Equal(t, &dtconfig.Config{
 		ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "defaults")),
@@ -85,7 +85,7 @@ func TestLoadConfig(t *testing.T) {
 	}, defaultConfig)
 
 	validConfig := cfg.Exporters[config.NewIDWithName(typeStr, "valid")].(*dtconfig.Config)
-	err = validConfig.Sanitize()
+	err = validConfig.ValidateAndConfigureHTTPClientSettings()
 
 	require.NoError(t, err)
 	assert.Equal(t, &dtconfig.Config{
@@ -105,11 +105,11 @@ func TestLoadConfig(t *testing.T) {
 		Prefix: "myprefix",
 
 		Tags:              []string{},
-		DefaultDimensions: map[string]string{"example": "tag"},
+		DefaultDimensions: map[string]string{"example": "default_dimension_value"},
 	}, validConfig)
 
 	badEndpointConfig := cfg.Exporters[config.NewIDWithName(typeStr, "bad_endpoint")].(*dtconfig.Config)
-	err = badEndpointConfig.Sanitize()
+	err = badEndpointConfig.ValidateAndConfigureHTTPClientSettings()
 	require.Error(t, err)
 }
 

@@ -19,6 +19,7 @@ import (
 
 	dtMetric "github.com/dynatrace-oss/dynatrace-metric-utils-go/metric"
 	"github.com/dynatrace-oss/dynatrace-metric-utils-go/metric/dimensions"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/ttlmap"
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
@@ -54,15 +55,24 @@ func serializeGauge(name, prefix string, dims dimensions.NormalizedDimensionList
 	return dm.Serialize()
 }
 
-func serializeIntSum(name, prefix string, dims dimensions.NormalizedDimensionList, t pdata.AggregationTemporality, dp pdata.IntDataPoint) (string, error) {
+func serializeIntSum(name, prefix string, dims dimensions.NormalizedDimensionList, t pdata.AggregationTemporality, dp pdata.IntDataPoint, prev *ttlmap.TTLMap) (string, error) {
 	var valueOpt dtMetric.MetricOption
-	if t == pdata.AggregationTemporalityDelta {
-		valueOpt = dtMetric.WithIntCounterValueDelta(dp.Value())
-	} else {
-		// calculate delta by default
-		// possibly configure to allow monotonic (non-default)
-		valueOpt = dtMetric.WithIntCounterValueTotal(dp.Value())
+	if t == pdata.AggregationTemporalityCumulative {
+		dm, err := convertTotalIntCounterToDelta(name, prefix, dims, dp, prev)
+
+		if err != nil {
+			return "", err
+		}
+
+		if dm == nil {
+			return "", nil
+		}
+
+		return dm.Serialize()
 	}
+
+	// unspecified temporality is treated as delta
+	valueOpt = dtMetric.WithIntCounterValueDelta(dp.Value())
 
 	dm, err := dtMetric.NewMetric(
 		name,
@@ -79,13 +89,58 @@ func serializeIntSum(name, prefix string, dims dimensions.NormalizedDimensionLis
 	return dm.Serialize()
 }
 
-func serializeSum(name, prefix string, dims dimensions.NormalizedDimensionList, t pdata.AggregationTemporality, dp pdata.NumberDataPoint) (string, error) {
-	var valueOpt dtMetric.MetricOption
-	if t == pdata.AggregationTemporalityDelta {
-		valueOpt = dtMetric.WithFloatCounterValueDelta(dp.Value())
-	} else {
-		valueOpt = dtMetric.WithFloatCounterValueTotal(dp.Value())
+func convertTotalIntCounterToDelta(name, prefix string, dims dimensions.NormalizedDimensionList, dp pdata.IntDataPoint, prev *ttlmap.TTLMap) (*dtMetric.Metric, error) {
+	c := prev.Get(name)
+
+	if c == nil {
+		prev.Put(name, dp)
+		return nil, nil
 	}
+
+	oldCount := c.(pdata.IntDataPoint)
+
+	if oldCount.Timestamp().AsTime().After(dp.Timestamp().AsTime()) {
+		// point is older than what we already have
+		return nil, nil
+	}
+
+	val := dp.Value() - oldCount.Value()
+
+	dm, err := dtMetric.NewMetric(
+		name,
+		dtMetric.WithPrefix(prefix),
+		dtMetric.WithDimensions(dims),
+		dtMetric.WithTimestamp(dp.Timestamp().AsTime()),
+		dtMetric.WithIntCounterValueDelta(val),
+	)
+
+	if err != nil {
+		return dm, err
+	}
+
+	prev.Put(name, dp)
+
+	return dm, err
+}
+
+func serializeSum(name, prefix string, dims dimensions.NormalizedDimensionList, t pdata.AggregationTemporality, dp pdata.NumberDataPoint, prev *ttlmap.TTLMap) (string, error) {
+	var valueOpt dtMetric.MetricOption
+	if t == pdata.AggregationTemporalityCumulative {
+		dm, err := convertTotalCounterToDelta(name, prefix, dims, dp, prev)
+
+		if err != nil {
+			return "", err
+		}
+
+		if dm == nil {
+			return "", nil
+		}
+
+		return dm.Serialize()
+	}
+
+	// unspecified temporality is treated as delta
+	valueOpt = dtMetric.WithFloatCounterValueDelta(dp.Value())
 
 	dm, err := dtMetric.NewMetric(
 		name,
@@ -100,6 +155,40 @@ func serializeSum(name, prefix string, dims dimensions.NormalizedDimensionList, 
 	}
 
 	return dm.Serialize()
+}
+
+func convertTotalCounterToDelta(name, prefix string, dims dimensions.NormalizedDimensionList, dp pdata.NumberDataPoint, prev *ttlmap.TTLMap) (*dtMetric.Metric, error) {
+	c := prev.Get(name)
+
+	if c == nil {
+		prev.Put(name, dp)
+		return nil, nil
+	}
+
+	oldCount := c.(pdata.NumberDataPoint)
+
+	if oldCount.Timestamp().AsTime().After(dp.Timestamp().AsTime()) {
+		// point is older than what we already have
+		return nil, nil
+	}
+
+	val := dp.Value() - oldCount.Value()
+
+	dm, err := dtMetric.NewMetric(
+		name,
+		dtMetric.WithPrefix(prefix),
+		dtMetric.WithDimensions(dims),
+		dtMetric.WithTimestamp(dp.Timestamp().AsTime()),
+		dtMetric.WithFloatCounterValueDelta(val),
+	)
+
+	if err != nil {
+		return dm, err
+	}
+
+	prev.Put(name, dp)
+
+	return dm, err
 }
 
 func histMinMax(bounds []float64, counts []uint64) (float64, float64, bool) {
