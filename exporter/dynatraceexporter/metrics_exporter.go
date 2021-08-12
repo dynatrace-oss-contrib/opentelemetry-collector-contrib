@@ -154,25 +154,6 @@ func (e *exporter) serializeMetric(metric pdata.Metric) ([]string, error) {
 	switch metric.DataType() {
 	case pdata.MetricDataTypeNone:
 		return nil, nil
-	case pdata.MetricDataTypeIntGauge:
-		for i := 0; i < metric.IntGauge().DataPoints().Len(); i++ {
-			dp := metric.IntGauge().DataPoints().At(i)
-
-			line, err := serializeIntGauge(
-				metric.Name(),
-				e.cfg.Prefix,
-				e.makeCombinedDimensions(dp.LabelsMap()),
-				dp,
-			)
-
-			if err != nil {
-				return nil, err
-			}
-
-			if line != "" {
-				metricLines = append(metricLines, line)
-			}
-		}
 	case pdata.MetricDataTypeGauge:
 		for i := 0; i < metric.Gauge().DataPoints().Len(); i++ {
 			dp := metric.Gauge().DataPoints().At(i)
@@ -182,26 +163,6 @@ func (e *exporter) serializeMetric(metric pdata.Metric) ([]string, error) {
 				e.cfg.Prefix,
 				e.makeCombinedDimensions(dp.LabelsMap()),
 				dp,
-			)
-
-			if err != nil {
-				return nil, err
-			}
-
-			if line != "" {
-				metricLines = append(metricLines, line)
-			}
-		}
-	case pdata.MetricDataTypeIntSum:
-		for i := 0; i < metric.IntSum().DataPoints().Len(); i++ {
-			dp := metric.IntSum().DataPoints().At(i)
-			line, err := serializeIntSum(
-				metric.Name(),
-				e.cfg.Prefix,
-				e.makeCombinedDimensions(dp.LabelsMap()),
-				metric.IntSum().AggregationTemporality(),
-				dp,
-				e.prev,
 			)
 
 			if err != nil {

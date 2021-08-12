@@ -26,12 +26,12 @@ import (
 )
 
 func Test_serializeIntGauge(t *testing.T) {
-	dp := pdata.NewIntDataPoint()
-	dp.SetValue(5)
+	dp := pdata.NewNumberDataPoint()
+	dp.SetIntVal(5)
 	dp.SetTimestamp(pdata.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
 
 	t.Run("with prefix and dimension", func(t *testing.T) {
-		got, err := serializeIntGauge("int_gauge", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), dp)
+		got, err := serializeGauge("int_gauge", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), dp)
 		assert.NoError(t, err)
 		assert.Equal(t, "prefix.int_gauge,key=value gauge,5 1626438600000", got)
 	})
@@ -39,7 +39,7 @@ func Test_serializeIntGauge(t *testing.T) {
 
 func Test_serializeGauge(t *testing.T) {
 	dp := pdata.NewNumberDataPoint()
-	dp.SetValue(5.5)
+	dp.SetDoubleVal(5.5)
 	dp.SetTimestamp(pdata.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
 
 	t.Run("with prefix and dimension", func(t *testing.T) {
@@ -52,31 +52,31 @@ func Test_serializeGauge(t *testing.T) {
 func Test_serializeIntSum(t *testing.T) {
 
 	t.Run("delta with prefix and dimension", func(t *testing.T) {
-		dp := pdata.NewIntDataPoint()
-		dp.SetValue(5)
+		dp := pdata.NewNumberDataPoint()
+		dp.SetIntVal(5)
 		dp.SetTimestamp(pdata.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
 
-		got, err := serializeIntSum("int_sum", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), pdata.AggregationTemporalityDelta, dp, ttlmap.New(1, 1))
+		got, err := serializeSum("int_sum", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), pdata.AggregationTemporalityDelta, dp, ttlmap.New(1, 1))
 		assert.NoError(t, err)
 		assert.Equal(t, "prefix.int_sum,key=value count,delta=5 1626438600000", got)
 	})
 
 	t.Run("cumulative with prefix and dimension", func(t *testing.T) {
-		dp := pdata.NewIntDataPoint()
-		dp.SetValue(5)
+		dp := pdata.NewNumberDataPoint()
+		dp.SetIntVal(5)
 		dp.SetTimestamp(pdata.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
 
-		dp2 := pdata.NewIntDataPoint()
-		dp2.SetValue(10)
+		dp2 := pdata.NewNumberDataPoint()
+		dp2.SetIntVal(10)
 		dp2.SetTimestamp(pdata.Timestamp(time.Date(2021, 07, 16, 12, 31, 0, 0, time.UTC).UnixNano()))
 
 		prev := ttlmap.New(1, 1)
 
-		got, err := serializeIntSum("int_sum", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), pdata.AggregationTemporalityCumulative, dp, prev)
+		got, err := serializeSum("int_sum", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), pdata.AggregationTemporalityCumulative, dp, prev)
 		assert.NoError(t, err)
 		assert.Equal(t, "", got)
 
-		got, err = serializeIntSum("int_sum", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), pdata.AggregationTemporalityCumulative, dp2, prev)
+		got, err = serializeSum("int_sum", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), pdata.AggregationTemporalityCumulative, dp2, prev)
 		assert.NoError(t, err)
 		assert.Equal(t, "prefix.int_sum,key=value count,delta=5 1626438660000", got)
 	})
@@ -85,7 +85,7 @@ func Test_serializeIntSum(t *testing.T) {
 func Test_serializeSum(t *testing.T) {
 	t.Run("delta with prefix and dimension", func(t *testing.T) {
 		dp := pdata.NewNumberDataPoint()
-		dp.SetValue(5.5)
+		dp.SetDoubleVal(5.5)
 		dp.SetTimestamp(pdata.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
 
 		prev := ttlmap.New(1, 1)
@@ -97,11 +97,11 @@ func Test_serializeSum(t *testing.T) {
 
 	t.Run("cumulative with prefix and dimension", func(t *testing.T) {
 		dp := pdata.NewNumberDataPoint()
-		dp.SetValue(5.5)
+		dp.SetDoubleVal(5.5)
 		dp.SetTimestamp(pdata.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
 
 		dp2 := pdata.NewNumberDataPoint()
-		dp2.SetValue(7.0)
+		dp2.SetDoubleVal(7.0)
 		dp2.SetTimestamp(pdata.Timestamp(time.Date(2021, 07, 16, 12, 31, 0, 0, time.UTC).UnixNano()))
 
 		prev := ttlmap.New(1, 1)

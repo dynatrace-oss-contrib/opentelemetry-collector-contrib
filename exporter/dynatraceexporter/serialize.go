@@ -16,6 +16,7 @@ package dynatraceexporter
 
 import (
 	"errors"
+	"fmt"
 
 	dtMetric "github.com/dynatrace-oss/dynatrace-metric-utils-go/metric"
 	"github.com/dynatrace-oss/dynatrace-metric-utils-go/metric/dimensions"
@@ -24,29 +25,23 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/ttlmap"
 )
 
-func serializeIntGauge(name, prefix string, dims dimensions.NormalizedDimensionList, dp pdata.IntDataPoint) (string, error) {
-	dm, err := dtMetric.NewMetric(
-		name,
-		dtMetric.WithPrefix(prefix),
-		dtMetric.WithDimensions(dims),
-		dtMetric.WithTimestamp(dp.Timestamp().AsTime()),
-		dtMetric.WithIntGaugeValue(dp.Value()),
-	)
-
-	if err != nil {
-		return "", err
-	}
-
-	return dm.Serialize()
-}
-
 func serializeGauge(name, prefix string, dims dimensions.NormalizedDimensionList, dp pdata.NumberDataPoint) (string, error) {
+	var metricOption dtMetric.MetricOption
+
+	if dp.Type() == pdata.MetricValueTypeInt {
+		metricOption = dtMetric.WithIntGaugeValue(dp.IntVal())
+	} else if dp.Type() == pdata.MetricValueTypeDouble {
+		metricOption = dtMetric.WithFloatGaugeValue(dp.DoubleVal())
+	} else {
+		return "", nil
+	}
+
 	dm, err := dtMetric.NewMetric(
 		name,
 		dtMetric.WithPrefix(prefix),
 		dtMetric.WithDimensions(dims),
 		dtMetric.WithTimestamp(dp.Timestamp().AsTime()),
-		dtMetric.WithFloatGaugeValue(dp.Value()),
+		metricOption,
 	)
 
 	if err != nil {
@@ -54,94 +49,32 @@ func serializeGauge(name, prefix string, dims dimensions.NormalizedDimensionList
 	}
 
 	return dm.Serialize()
-}
-
-func serializeIntSum(name, prefix string, dims dimensions.NormalizedDimensionList, t pdata.AggregationTemporality, dp pdata.IntDataPoint, prev *ttlmap.TTLMap) (string, error) {
-	var valueOpt dtMetric.MetricOption
-	if t == pdata.AggregationTemporalityCumulative {
-		dm, err := convertTotalIntCounterToDelta(name, prefix, dims, dp, prev)
-
-		if err != nil {
-			return "", err
-		}
-
-		if dm == nil {
-			return "", nil
-		}
-
-		return dm.Serialize()
-	}
-
-	// unspecified temporality is treated as delta
-	valueOpt = dtMetric.WithIntCounterValueDelta(dp.Value())
-
-	dm, err := dtMetric.NewMetric(
-		name,
-		dtMetric.WithPrefix(prefix),
-		dtMetric.WithDimensions(dims),
-		dtMetric.WithTimestamp(dp.Timestamp().AsTime()),
-		valueOpt,
-	)
-
-	if err != nil {
-		return "", err
-	}
-
-	return dm.Serialize()
-}
-
-func convertTotalIntCounterToDelta(name, prefix string, dims dimensions.NormalizedDimensionList, dp pdata.IntDataPoint, prev *ttlmap.TTLMap) (*dtMetric.Metric, error) {
-	c := prev.Get(name)
-
-	if c == nil {
-		prev.Put(name, dp)
-		return nil, nil
-	}
-
-	oldCount := c.(pdata.IntDataPoint)
-
-	if oldCount.Timestamp().AsTime().After(dp.Timestamp().AsTime()) {
-		// point is older than what we already have
-		return nil, nil
-	}
-
-	val := dp.Value() - oldCount.Value()
-
-	dm, err := dtMetric.NewMetric(
-		name,
-		dtMetric.WithPrefix(prefix),
-		dtMetric.WithDimensions(dims),
-		dtMetric.WithTimestamp(dp.Timestamp().AsTime()),
-		dtMetric.WithIntCounterValueDelta(val),
-	)
-
-	if err != nil {
-		return dm, err
-	}
-
-	prev.Put(name, dp)
-
-	return dm, err
 }
 
 func serializeSum(name, prefix string, dims dimensions.NormalizedDimensionList, t pdata.AggregationTemporality, dp pdata.NumberDataPoint, prev *ttlmap.TTLMap) (string, error) {
-	var valueOpt dtMetric.MetricOption
-	if t == pdata.AggregationTemporalityCumulative {
-		dm, err := convertTotalCounterToDelta(name, prefix, dims, dp, prev)
-
-		if err != nil {
-			return "", err
-		}
-
-		if dm == nil {
-			return "", nil
-		}
-
-		return dm.Serialize()
+	switch t {
+	case pdata.AggregationTemporalityCumulative:
+		return serializeCumulativeCounter(name, prefix, dims, dp, prev)
+	// for now unspecified is treated as delta
+	case pdata.AggregationTemporalityUnspecified:
+		fallthrough
+	case pdata.AggregationTemporalityDelta:
+		return serializeDeltaCounter(name, prefix, dims, dp)
 	}
 
-	// unspecified temporality is treated as delta
-	valueOpt = dtMetric.WithFloatCounterValueDelta(dp.Value())
+	return "", nil
+}
+
+func serializeDeltaCounter(name, prefix string, dims dimensions.NormalizedDimensionList, dp pdata.NumberDataPoint) (string, error) {
+	var valueOpt dtMetric.MetricOption
+
+	if dp.Type() == pdata.MetricValueTypeInt {
+		valueOpt = dtMetric.WithIntCounterValueDelta(dp.IntVal())
+	} else if dp.Type() == pdata.MetricValueTypeDouble {
+		valueOpt = dtMetric.WithFloatCounterValueDelta(dp.DoubleVal())
+	} else {
+		return "", nil
+	}
 
 	dm, err := dtMetric.NewMetric(
 		name,
@@ -153,16 +86,37 @@ func serializeSum(name, prefix string, dims dimensions.NormalizedDimensionList, 
 
 	if err != nil {
 		return "", err
+	}
+
+	return dm.Serialize()
+}
+
+func serializeCumulativeCounter(name, prefix string, dims dimensions.NormalizedDimensionList, dp pdata.NumberDataPoint, prev *ttlmap.TTLMap) (string, error) {
+	dm, err := convertTotalCounterToDelta(name, prefix, dims, dp, prev)
+
+	if err != nil {
+		return "", err
+	}
+
+	if dm == nil {
+		return "", nil
 	}
 
 	return dm.Serialize()
 }
 
 func convertTotalCounterToDelta(name, prefix string, dims dimensions.NormalizedDimensionList, dp pdata.NumberDataPoint, prev *ttlmap.TTLMap) (*dtMetric.Metric, error) {
-	c := prev.Get(name)
+	id := name
+
+	dp.LabelsMap().Sort().Range(func(k, v string) bool {
+		id += fmt.Sprintf(",%s=%s", k, v)
+		return true
+	})
+
+	c := prev.Get(id)
 
 	if c == nil {
-		prev.Put(name, dp)
+		prev.Put(id, dp)
 		return nil, nil
 	}
 
@@ -173,21 +127,36 @@ func convertTotalCounterToDelta(name, prefix string, dims dimensions.NormalizedD
 		return nil, nil
 	}
 
-	val := dp.Value() - oldCount.Value()
+	var valueOpt dtMetric.MetricOption
+
+	if dp.Type() != oldCount.Type() {
+		// if data type changes, reset the counter
+		prev.Put(id, dp)
+		return nil, nil
+	}
+
+	if dp.Type() == pdata.MetricValueTypeInt {
+		valueOpt = dtMetric.WithIntCounterValueDelta(dp.IntVal() - oldCount.IntVal())
+	} else if dp.Type() == pdata.MetricValueTypeDouble {
+		valueOpt = dtMetric.WithFloatCounterValueDelta(dp.DoubleVal() - oldCount.DoubleVal())
+	} else {
+		// unknown value type not supported
+		return nil, nil
+	}
 
 	dm, err := dtMetric.NewMetric(
 		name,
 		dtMetric.WithPrefix(prefix),
 		dtMetric.WithDimensions(dims),
 		dtMetric.WithTimestamp(dp.Timestamp().AsTime()),
-		dtMetric.WithFloatCounterValueDelta(val),
+		valueOpt,
 	)
 
 	if err != nil {
 		return dm, err
 	}
 
-	prev.Put(name, dp)
+	prev.Put(id, dp)
 
 	return dm, err
 }
