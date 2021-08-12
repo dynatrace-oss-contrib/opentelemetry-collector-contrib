@@ -49,9 +49,20 @@ func Test_serializeGauge(t *testing.T) {
 	})
 }
 
-func Test_serializeIntSum(t *testing.T) {
+func Test_serializeSum(t *testing.T) {
+	t.Run("float delta with prefix and dimension", func(t *testing.T) {
+		dp := pdata.NewNumberDataPoint()
+		dp.SetDoubleVal(5.5)
+		dp.SetTimestamp(pdata.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
 
-	t.Run("delta with prefix and dimension", func(t *testing.T) {
+		prev := ttlmap.New(1, 1)
+
+		got, err := serializeSum("double_sum", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), pdata.AggregationTemporalityDelta, dp, prev)
+		assert.NoError(t, err)
+		assert.Equal(t, "prefix.double_sum,key=value count,delta=5.5 1626438600000", got)
+	})
+
+	t.Run("int delta with prefix and dimension", func(t *testing.T) {
 		dp := pdata.NewNumberDataPoint()
 		dp.SetIntVal(5)
 		dp.SetTimestamp(pdata.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
@@ -61,7 +72,27 @@ func Test_serializeIntSum(t *testing.T) {
 		assert.Equal(t, "prefix.int_sum,key=value count,delta=5 1626438600000", got)
 	})
 
-	t.Run("cumulative with prefix and dimension", func(t *testing.T) {
+	t.Run("float cumulative with prefix and dimension", func(t *testing.T) {
+		dp := pdata.NewNumberDataPoint()
+		dp.SetDoubleVal(5.5)
+		dp.SetTimestamp(pdata.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
+
+		dp2 := pdata.NewNumberDataPoint()
+		dp2.SetDoubleVal(7.0)
+		dp2.SetTimestamp(pdata.Timestamp(time.Date(2021, 07, 16, 12, 31, 0, 0, time.UTC).UnixNano()))
+
+		prev := ttlmap.New(1, 1)
+
+		got, err := serializeSum("double_sum", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), pdata.AggregationTemporalityCumulative, dp, prev)
+		assert.NoError(t, err)
+		assert.Equal(t, "", got)
+
+		got, err = serializeSum("double_sum", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), pdata.AggregationTemporalityCumulative, dp2, prev)
+		assert.NoError(t, err)
+		assert.Equal(t, "prefix.double_sum,key=value count,delta=1.5 1626438660000", got)
+	})
+
+	t.Run("int cumulative with prefix and dimension", func(t *testing.T) {
 		dp := pdata.NewNumberDataPoint()
 		dp.SetIntVal(5)
 		dp.SetTimestamp(pdata.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
@@ -80,39 +111,71 @@ func Test_serializeIntSum(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, "prefix.int_sum,key=value count,delta=5 1626438660000", got)
 	})
-}
 
-func Test_serializeSum(t *testing.T) {
-	t.Run("delta with prefix and dimension", func(t *testing.T) {
+	t.Run("different dimensions should be treated as separate counters", func(t *testing.T) {
 		dp := pdata.NewNumberDataPoint()
-		dp.SetDoubleVal(5.5)
-		dp.SetTimestamp(pdata.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
-
-		prev := ttlmap.New(1, 1)
-
-		got, err := serializeSum("double_sum", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), pdata.AggregationTemporalityDelta, dp, prev)
-		assert.NoError(t, err)
-		assert.Equal(t, "prefix.double_sum,key=value count,delta=5.5 1626438600000", got)
-	})
-
-	t.Run("cumulative with prefix and dimension", func(t *testing.T) {
-		dp := pdata.NewNumberDataPoint()
-		dp.SetDoubleVal(5.5)
+		dp.SetIntVal(5)
+		dp.LabelsMap().Insert("sort", "unstable")
+		dp.LabelsMap().Insert("group", "a")
 		dp.SetTimestamp(pdata.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
 
 		dp2 := pdata.NewNumberDataPoint()
-		dp2.SetDoubleVal(7.0)
-		dp2.SetTimestamp(pdata.Timestamp(time.Date(2021, 07, 16, 12, 31, 0, 0, time.UTC).UnixNano()))
+		dp2.SetIntVal(10)
+		dp2.LabelsMap().Insert("sort", "unstable")
+		dp2.LabelsMap().Insert("group", "b")
+		dp2.SetTimestamp(pdata.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
+
+		dp3 := pdata.NewNumberDataPoint()
+		dp3.SetIntVal(10)
+		dp3.LabelsMap().Insert("group", "a")
+		dp3.LabelsMap().Insert("sort", "unstable")
+		dp3.SetTimestamp(pdata.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
+
+		dp4 := pdata.NewNumberDataPoint()
+		dp4.SetIntVal(20)
+		dp4.LabelsMap().Insert("group", "b")
+		dp4.LabelsMap().Insert("sort", "unstable")
+		dp4.SetTimestamp(pdata.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
 
 		prev := ttlmap.New(1, 1)
 
-		got, err := serializeSum("double_sum", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), pdata.AggregationTemporalityCumulative, dp, prev)
+		got, err := serializeSum("int_sum", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "a")), pdata.AggregationTemporalityCumulative, dp, prev)
+		got2, err2 := serializeSum("int_sum", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "b")), pdata.AggregationTemporalityCumulative, dp2, prev)
+		got3, err3 := serializeSum("int_sum", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "a")), pdata.AggregationTemporalityCumulative, dp3, prev)
+		got4, err4 := serializeSum("int_sum", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "b")), pdata.AggregationTemporalityCumulative, dp4, prev)
+
+		assert.NoError(t, err)
+		assert.NoError(t, err2)
+		assert.NoError(t, err3)
+		assert.NoError(t, err4)
+		assert.Equal(t, "", got)
+		assert.Equal(t, "", got2)
+		assert.Equal(t, "prefix.int_sum,key=a count,delta=5 1626438600000", got3)
+		assert.Equal(t, "prefix.int_sum,key=b count,delta=10 1626438600000", got4)
+	})
+
+	t.Run("count values older than the previous count value are dropped", func(t *testing.T) {
+		dp := pdata.NewNumberDataPoint()
+		dp.SetIntVal(5)
+		dp.SetTimestamp(pdata.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
+
+		dp2 := pdata.NewNumberDataPoint()
+		dp2.SetIntVal(10)
+		dp2.SetTimestamp(pdata.Timestamp(time.Date(2021, 07, 16, 12, 29, 0, 0, time.UTC).UnixNano()))
+
+		prev := ttlmap.New(1, 1)
+
+		got, err := serializeSum("int_sum", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), pdata.AggregationTemporalityCumulative, dp, prev)
 		assert.NoError(t, err)
 		assert.Equal(t, "", got)
 
-		got, err = serializeSum("double_sum", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), pdata.AggregationTemporalityCumulative, dp2, prev)
+		assert.Equal(t, dp, prev.Get("int_sum"))
+
+		got, err = serializeSum("int_sum", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), pdata.AggregationTemporalityCumulative, dp2, prev)
 		assert.NoError(t, err)
-		assert.Equal(t, "prefix.double_sum,key=value count,delta=1.5 1626438660000", got)
+		assert.Equal(t, "", got)
+
+		assert.Equal(t, dp, prev.Get("int_sum"))
 	})
 }
 
