@@ -112,8 +112,6 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 	prevIntSumCumulativeDataPoint.SetIntVal(8)
 	prevIntSumCumulativeDataPoint.SetTimestamp(testTimestamp)
 
-	e.prev.Put(prevIntSumCumulativeMetric.Name(), prevIntSumCumulativeDataPoint)
-
 	intSumCumulativeMetric := metrics.AppendEmpty()
 	intSumCumulativeMetric.SetDataType(pdata.MetricDataTypeSum)
 	intSumCumulativeMetric.SetName("int_sum_cumulative")
@@ -151,8 +149,6 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 	prevDblSumCumulativeDataPoint := prevDblSumCumulativeDataPoints.AppendEmpty()
 	prevDblSumCumulativeDataPoint.SetDoubleVal(10.0)
 	prevDblSumCumulativeDataPoint.SetTimestamp(testTimestamp)
-
-	e.prev.Put(prevIntSumCumulativeMetric.Name(), prevIntSumCumulativeDataPoint)
 
 	dblSumCumulativeMetric := metrics.AppendEmpty()
 	dblSumCumulativeMetric.SetDataType(pdata.MetricDataTypeSum)
@@ -206,15 +202,16 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 		return
 	}
 
-	assert.Contains(t, sent, "prefix.int_gauge,dt.metrics.source=opentelemetry gauge,10 1626438600000")
-	assert.Contains(t, sent, "prefix.int_sum_cumulative,dt.metrics.source=opentelemetry count,delta=2 1626438600000")
-	assert.Contains(t, sent, "prefix.int_sum,dt.metrics.source=opentelemetry count,delta=10 1626438600000")
-	assert.Contains(t, sent, "prefix.double_gauge,dt.metrics.source=opentelemetry gauge,10.1 1626438600000")
-	assert.Contains(t, sent, "prefix.double_sum,dt.metrics.source=opentelemetry count,delta=10.1 1626438600000")
-	assert.Contains(t, sent, "prefix.dbl_sum_cumulative,dt.metrics.source=opentelemetry count,delta=0.5 1626438600000")
-	assert.Contains(t, sent, "prefix.double_histogram,dt.metrics.source=opentelemetry gauge,min=0,max=8,sum=9.5,count=2 1626438600000")
-	assert.Contains(t, sent, "prefix.min_bucket_histogram,dt.metrics.source=opentelemetry gauge,min=0,max=8,sum=3,count=2 1626438600000")
-	assert.Contains(t, sent, "prefix.max_bucket_histogram,dt.metrics.source=opentelemetry gauge,min=0,max=8,sum=20,count=2 1626438600000")
+	expected := `prefix.int_gauge,dt.metrics.source=opentelemetry gauge,10 1626438600000
+prefix.int_sum,dt.metrics.source=opentelemetry count,delta=10 1626438600000
+prefix.int_sum_cumulative,dt.metrics.source=opentelemetry count,delta=2 1626438600000
+prefix.double_gauge,dt.metrics.source=opentelemetry gauge,10.1 1626438600000
+prefix.double_sum,dt.metrics.source=opentelemetry count,delta=10.1 1626438600000
+prefix.dbl_sum_cumulative,dt.metrics.source=opentelemetry count,delta=0.5 1626438600000
+prefix.double_histogram,dt.metrics.source=opentelemetry gauge,min=0,max=8,sum=9.5,count=2 1626438600000
+prefix.min_bucket_histogram,dt.metrics.source=opentelemetry gauge,min=0,max=8,sum=3,count=2 1626438600000
+prefix.max_bucket_histogram,dt.metrics.source=opentelemetry gauge,min=0,max=8,sum=20,count=2 1626438600000`
+	assert.Equal(t, expected, sent)
 }
 
 func Test_exporter_PushMetricsData_dimensions(t *testing.T) {
