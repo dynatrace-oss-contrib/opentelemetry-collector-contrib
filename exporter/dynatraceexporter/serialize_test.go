@@ -25,31 +25,47 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/ttlmap"
 )
 
-func Test_serializeIntGauge(t *testing.T) {
-	dp := pdata.NewNumberDataPoint()
-	dp.SetIntVal(5)
-	dp.SetTimestamp(pdata.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
-
-	t.Run("with prefix and dimension", func(t *testing.T) {
-		got, err := serializeGauge("int_gauge", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), dp)
-		assert.NoError(t, err)
-		assert.Equal(t, "prefix.int_gauge,key=value gauge,5 1626438600000", got)
-	})
-}
-
 func Test_serializeGauge(t *testing.T) {
-	dp := pdata.NewNumberDataPoint()
-	dp.SetDoubleVal(5.5)
-	dp.SetTimestamp(pdata.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
+	t.Run("float with prefix and dimension", func(t *testing.T) {
+		dp := pdata.NewNumberDataPoint()
+		dp.SetDoubleVal(5.5)
+		dp.SetTimestamp(pdata.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
 
-	t.Run("with prefix and dimension", func(t *testing.T) {
 		got, err := serializeGauge("dbl_gauge", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), dp)
 		assert.NoError(t, err)
 		assert.Equal(t, "prefix.dbl_gauge,key=value gauge,5.5 1626438600000", got)
 	})
+
+	t.Run("int with prefix and dimension", func(t *testing.T) {
+		dp := pdata.NewNumberDataPoint()
+		dp.SetIntVal(5)
+		dp.SetTimestamp(pdata.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
+
+		got, err := serializeGauge("int_gauge", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), dp)
+		assert.NoError(t, err)
+		assert.Equal(t, "prefix.int_gauge,key=value gauge,5 1626438600000", got)
+	})
+
+	t.Run("without timestamp", func(t *testing.T) {
+		dp := pdata.NewNumberDataPoint()
+		dp.SetIntVal(5)
+
+		got, err := serializeGauge("int_gauge", "prefix", dimensions.NewNormalizedDimensionList(), dp)
+		assert.NoError(t, err)
+		assert.Equal(t, "prefix.int_gauge gauge,5", got)
+	})
 }
 
 func Test_serializeSum(t *testing.T) {
+	t.Run("without timestamp", func(t *testing.T) {
+		dp := pdata.NewNumberDataPoint()
+		dp.SetIntVal(5)
+
+		got, err := serializeSum("int_sum", "prefix", dimensions.NewNormalizedDimensionList(), pdata.AggregationTemporalityDelta, dp, ttlmap.New(1, 1))
+		assert.NoError(t, err)
+		assert.Equal(t, "prefix.int_sum count,delta=5", got)
+	})
+
 	t.Run("float delta with prefix and dimension", func(t *testing.T) {
 		dp := pdata.NewNumberDataPoint()
 		dp.SetDoubleVal(5.5)
