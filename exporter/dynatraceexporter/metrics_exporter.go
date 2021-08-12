@@ -35,6 +35,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/ttlmap"
 )
 
+const (
+	cSweepIntervalSeconds = 1800
+	cMaxAgeSeconds        = 3600
+)
+
 // NewExporter exports to a Dynatrace Metrics v2 API
 func newMetricsExporter(params component.ExporterCreateSettings, cfg *config.Config) *exporter {
 	dims := []dimensions.Dimension{}
@@ -48,7 +53,7 @@ func newMetricsExporter(params component.ExporterCreateSettings, cfg *config.Con
 	)
 	staticDimensions := dimensions.NewNormalizedDimensionList(dimensions.NewDimension("dt.metrics.source", "opentelemetry"))
 
-	prevPts := ttlmap.New(1800, 3600)
+	prevPts := ttlmap.New(cSweepIntervalSeconds, cMaxAgeSeconds)
 	prevPts.Start()
 
 	return &exporter{

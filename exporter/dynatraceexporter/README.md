@@ -26,10 +26,10 @@ To see all available options, see [Advanced Configuration](#advanced-configurati
 
 ### Running alongside Dynatrace OneAgent (preferred)
 
-If you run the Collector on a host or VM that is monitored by the Dynatrace OneAgent then you only need to enable the exporter, but need no further configuration. The Dynatrace exporter will send all metrics to the OneAgent which will use its secure and load balanced connection to send the metrics to your Dynatrace SaaS or Managed environment.
+If you run the Collector on a host or VM that is monitored by the Dynatrace OneAgent then you only need to enable the exporter. No further configurations needed. The Dynatrace exporter will send all metrics to the OneAgent which will use its secure and load balanced connection to send the metrics to your Dynatrace SaaS or Managed environment.
 Depending on your environment, you might have to enable metrics ingestion on the OneAgent first as described in the [Dynatrace documentation](https://www.dynatrace.com/support/help/how-to-use-dynatrace/metrics/metric-ingestion/ingestion-methods/opentelemetry/).
 
-Note: The name and identifier of the host running the Collector will be added as a dimension to every metric. If this is undesirable, then the output plugin may be used in standalone mode using the directions below.
+> Note: The name and identifier of the host running the Collector will be added as a dimension to every metric. If this is undesirable, then the output plugin may be used in standalone mode using the directions below.
 
 ```yaml
 exporters:

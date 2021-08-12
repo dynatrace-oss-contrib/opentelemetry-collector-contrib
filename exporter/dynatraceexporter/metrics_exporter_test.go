@@ -74,7 +74,7 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 		},
 		defaultDimensions: dimensions.NewNormalizedDimensionList(),
 		staticDimensions:  dimensions.NewNormalizedDimensionList(dimensions.NewDimension("dt.metrics.source", "opentelemetry")),
-		prev:              ttlmap.New(1800, 3600),
+		prev:              ttlmap.New(cSweepIntervalSeconds, cMaxAgeSeconds),
 	}
 	e.client = ts.Client()
 
