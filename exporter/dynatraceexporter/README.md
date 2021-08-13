@@ -59,7 +59,7 @@ exporters:
     endpoint: "https://{your-environment-id}.live.dynatrace.com/api/v2/metrics/ingest"
 
     ## API token is required if an endpoint is specified and should be restricted to the 'Ingest metrics' scope
-	## hard-coded for illustration only, should be read from a secure source
+    ## hard-coded for illustration only, should be read from a secure source
     api_token: "your API token here" 
 ```
 
