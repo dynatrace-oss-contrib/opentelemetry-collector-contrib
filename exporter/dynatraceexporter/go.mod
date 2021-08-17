@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatr
 go 1.16
 
 require (
-	github.com/dynatrace-oss/dynatrace-metric-utils-go v0.2.0
+	github.com/dynatrace-oss/dynatrace-metric-utils-go v0.3.0
 	github.com/mattn/go-colorable v0.1.7 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.0.0-00010101000000-000000000000
 	github.com/stretchr/testify v1.7.0
