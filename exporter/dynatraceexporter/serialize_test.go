@@ -176,7 +176,7 @@ func Test_serializeSum(t *testing.T) {
 		dp.SetTimestamp(pdata.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
 
 		dp2 := pdata.NewNumberDataPoint()
-		dp2.SetIntVal(10)
+		dp2.SetIntVal(5)
 		dp2.SetTimestamp(pdata.Timestamp(time.Date(2021, 07, 16, 12, 29, 0, 0, time.UTC).UnixNano()))
 
 		prev := ttlmap.New(1, 1)

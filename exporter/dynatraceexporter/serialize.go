@@ -105,7 +105,20 @@ func serializeCumulativeCounter(name, prefix string, dims dimensions.NormalizedD
 	return dm.Serialize()
 }
 
-func convertTotalCounterToDelta(name, prefix string, dims dimensions.NormalizedDimensionList, dp pdata.NumberDataPoint, prev *ttlmap.TTLMap) (*dtMetric.Metric, error) {
+func MetricValueTypeToString(t pdata.MetricValueType) string {
+	switch t {
+	case pdata.MetricValueTypeDouble:
+		return "MetricValueTypeDouble"
+	case pdata.MetricValueTypeInt:
+		return "MericValueTypeInt"
+	case pdata.MetricValueTypeNone:
+		return "MericValueTypeNone"
+	default:
+		return "MetricValueTypeUnknown"
+	}
+}
+
+func convertTotalCounterToDelta(name, prefix string, dims dimensions.NormalizedDimensionList, dp pdata.NumberDataPoint, prevCounters *ttlmap.TTLMap) (*dtMetric.Metric, error) {
 	id := name
 
 	dp.LabelsMap().Sort().Range(func(k, v string) bool {
@@ -113,26 +126,25 @@ func convertTotalCounterToDelta(name, prefix string, dims dimensions.NormalizedD
 		return true
 	})
 
-	c := prev.Get(id)
+	prevCounter := prevCounters.Get(id)
 
-	if c == nil {
-		prev.Put(id, dp)
+	if prevCounter == nil {
+		prevCounters.Put(id, dp)
 		return nil, nil
 	}
 
-	oldCount := c.(pdata.NumberDataPoint)
+	oldCount := prevCounter.(pdata.NumberDataPoint)
 
 	if oldCount.Timestamp().AsTime().After(dp.Timestamp().AsTime()) {
-		// point is older than what we already have
+		// current point is older than the previous point
 		return nil, nil
 	}
 
 	var valueOpt dtMetric.MetricOption
 
 	if dp.Type() != oldCount.Type() {
-		// if data type changes, reset the counter
-		prev.Put(id, dp)
-		return nil, nil
+		prevCounters.Put(id, dp)
+		return nil, fmt.Errorf("expected %s to be type %s but got %s - count reset", name, MetricValueTypeToString(oldCount.Type()), MetricValueTypeToString(dp.Type()))
 	}
 
 	if dp.Type() == pdata.MetricValueTypeInt {
@@ -140,8 +152,7 @@ func convertTotalCounterToDelta(name, prefix string, dims dimensions.NormalizedD
 	} else if dp.Type() == pdata.MetricValueTypeDouble {
 		valueOpt = dtMetric.WithFloatCounterValueDelta(dp.DoubleVal() - oldCount.DoubleVal())
 	} else {
-		// unknown value type not supported
-		return nil, nil
+		return nil, fmt.Errorf("%s value type %s not supported", name, MetricValueTypeToString(dp.Type()))
 	}
 
 	dm, err := dtMetric.NewMetric(
@@ -156,7 +167,7 @@ func convertTotalCounterToDelta(name, prefix string, dims dimensions.NormalizedD
 		return dm, err
 	}
 
-	prev.Put(id, dp)
+	prevCounters.Put(id, dp)
 
 	return dm, err
 }
