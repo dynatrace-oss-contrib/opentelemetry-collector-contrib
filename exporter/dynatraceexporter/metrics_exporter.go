@@ -141,10 +141,11 @@ func (e *exporter) serializeMetrics(md pdata.Metrics) []string {
 	return lines
 }
 
-func (e *exporter) makeCombinedDimensions(labels pdata.StringMap) dimensions.NormalizedDimensionList {
+func (e *exporter) makeCombinedDimensions(labels pdata.AttributeMap) dimensions.NormalizedDimensionList {
 	dimsFromLabels := []dimensions.Dimension{}
-	labels.Range(func(k, v string) bool {
-		dimsFromLabels = append(dimsFromLabels, dimensions.NewDimension(k, v))
+
+	labels.Range(func(k string, v pdata.AttributeValue) bool {
+		dimsFromLabels = append(dimsFromLabels, dimensions.NewDimension(k, pdata.AttributeValueToString(v)))
 		return true
 	})
 	return dimensions.MergeLists(
@@ -166,7 +167,7 @@ func (e *exporter) serializeMetric(metric pdata.Metric) ([]string, error) {
 			line, err := serializeGauge(
 				metric.Name(),
 				e.cfg.Prefix,
-				e.makeCombinedDimensions(dp.LabelsMap()),
+				e.makeCombinedDimensions(dp.Attributes()),
 				dp,
 			)
 
@@ -185,7 +186,7 @@ func (e *exporter) serializeMetric(metric pdata.Metric) ([]string, error) {
 			line, err := serializeSum(
 				metric.Name(),
 				e.cfg.Prefix,
-				e.makeCombinedDimensions(dp.LabelsMap()),
+				e.makeCombinedDimensions(dp.Attributes()),
 				metric.Sum().AggregationTemporality(),
 				dp,
 				e.prev,
@@ -206,7 +207,7 @@ func (e *exporter) serializeMetric(metric pdata.Metric) ([]string, error) {
 			line, err := serializeHistogram(
 				metric.Name(),
 				e.cfg.Prefix,
-				e.makeCombinedDimensions(dp.LabelsMap()),
+				e.makeCombinedDimensions(dp.Attributes()),
 				metric.Histogram().AggregationTemporality(),
 				dp,
 			)

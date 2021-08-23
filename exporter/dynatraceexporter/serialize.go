@@ -121,8 +121,8 @@ func MetricValueTypeToString(t pdata.MetricValueType) string {
 func convertTotalCounterToDelta(name, prefix string, dims dimensions.NormalizedDimensionList, dp pdata.NumberDataPoint, prevCounters *ttlmap.TTLMap) (*dtMetric.Metric, error) {
 	id := name
 
-	dp.LabelsMap().Sort().Range(func(k, v string) bool {
-		id += fmt.Sprintf(",%s=%s", k, v)
+	dp.Attributes().Sort().Range(func(k string, v pdata.AttributeValue) bool {
+		id += fmt.Sprintf(",%s=%s", k, pdata.AttributeValueToString(v))
 		return true
 	})
 

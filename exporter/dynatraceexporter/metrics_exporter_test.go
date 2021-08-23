@@ -245,8 +245,8 @@ func Test_exporter_PushMetricsData_dimensions(t *testing.T) {
 	intGaugeDataPoint := intGaugeDataPoints.AppendEmpty()
 	intGaugeDataPoint.SetIntVal(10)
 	intGaugeDataPoint.SetTimestamp(testTimestamp)
-	intGaugeDataPoint.LabelsMap().Insert("from", "metric")
-	intGaugeDataPoint.LabelsMap().Insert("dt.metrics.source", "metric")
+	intGaugeDataPoint.Attributes().Insert("from", pdata.NewAttributeValueString("metric"))
+	intGaugeDataPoint.Attributes().Insert("dt.metrics.source", pdata.NewAttributeValueString("metric"))
 
 	e := newMetricsExporter(component.ExporterCreateSettings{Logger: zap.NewNop()}, &config.Config{
 		APIToken:           "token",
