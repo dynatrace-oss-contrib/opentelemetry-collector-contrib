@@ -36,8 +36,8 @@ import (
 )
 
 const (
-	cSweepIntervalSeconds = 1800
-	cMaxAgeSeconds        = 3600
+	cSweepIntervalSeconds = 300
+	cMaxAgeSeconds        = 900
 )
 
 // NewExporter exports to a Dynatrace Metrics v2 API
