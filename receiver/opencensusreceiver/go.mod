@@ -12,16 +12,16 @@ require (
 	github.com/rs/cors v1.8.2
 	github.com/soheilhy/cmux v0.1.5
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.45.0
-	go.opentelemetry.io/collector/model v0.45.0
-	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.28.0
-	go.opentelemetry.io/otel v1.4.0
-	go.opentelemetry.io/otel/trace v1.4.0
+	go.opentelemetry.io/collector v0.46.0
+	go.opentelemetry.io/collector/model v0.46.0
+	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.29.0
+	go.opentelemetry.io/otel v1.4.1
+	go.opentelemetry.io/otel/trace v1.4.1
 	google.golang.org/grpc v1.44.0
 	google.golang.org/protobuf v1.27.1
 )
 
-require go.opentelemetry.io/otel/sdk v1.4.0
+require go.opentelemetry.io/otel/sdk v1.4.1
 
 require (
 	cloud.google.com/go/compute v1.2.0 // indirect
@@ -32,9 +32,9 @@ require (
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
-	github.com/klauspost/compress v1.14.2 // indirect
+	github.com/klauspost/compress v1.14.4 // indirect
 	github.com/knadh/koanf v1.4.0 // indirect
-	github.com/magiconair/properties v1.8.5 // indirect
+	github.com/magiconair/properties v1.8.6 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.4.3 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
