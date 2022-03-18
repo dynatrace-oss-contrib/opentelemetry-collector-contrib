@@ -27,7 +27,7 @@ To see all available options, see [Advanced Configuration](#advanced-configurati
 > When using this exporter, it is RECOMMENDED to configure your SDKs to export DELTA metrics. 
 > When receiving CUMULATIVE metrics, this exporter will perform CUMULATIVE to DELTA conversions. 
 > In a multiple-instance deployment of the OpenTelemetry Collector this conversion will produce
-> consistent data.
+> inconsistent data.
 
 ### Running alongside Dynatrace OneAgent (preferred)
 
