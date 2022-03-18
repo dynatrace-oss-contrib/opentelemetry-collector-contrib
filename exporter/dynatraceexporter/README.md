@@ -24,10 +24,10 @@ The Dynatrace exporter is enabled by adding a `dynatrace` entry to the `exporter
 All configurations are optional, but if an `endpoint` other than the OneAgent metric ingestion endpoint is specified then an `api_token` is required.
 To see all available options, see [Advanced Configuration](#advanced-configuration) below.
 
-> When using this exporter, it is RECOMMENDED to configure your SDKs to export DELTA metrics. 
-> When receiving CUMULATIVE metrics, this exporter will perform CUMULATIVE to DELTA conversions. 
-> In a multiple-instance deployment of the OpenTelemetry Collector this conversion will produce
-> inconsistent data.
+> When using this exporter, it is strongly RECOMMENDED to configure your SDKs to export metrics
+> with DELTA temporality. When receiving metrics with CUMULATIVE temporality, this exporter 
+> will perform CUMULATIVE to DELTA conversion. In a multiple-instance deployment of the 
+> OpenTelemetry Collector, this conversion can produce inconsistent data.
 
 ### Running alongside Dynatrace OneAgent (preferred)
 
