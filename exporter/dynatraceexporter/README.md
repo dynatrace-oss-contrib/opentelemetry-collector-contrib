@@ -25,10 +25,11 @@ All configurations are optional, but if an `endpoint` other than the OneAgent me
 To see all available options, see [Advanced Configuration](#advanced-configuration) below.
 
 > When using this exporter, it is strongly RECOMMENDED to configure the OpenTelemetry SDKs to export metrics
-> with DELTA temporality. When receiving metrics with CUMULATIVE temporality, this exporter 
-> will perform CUMULATIVE to DELTA conversion. In a multiple-instance deployment of the 
-> OpenTelemetry Collector, this conversion can produce inconsistent data unless it can be
-> guaranteed that metrics from the same source are processed by the same collector instance.
+> with DELTA temporality. When receiving Sum or Histogram metrics with CUMULATIVE temporality, this exporter 
+> will perform CUMULATIVE to DELTA conversion, which will drop the first received data point, as there is no
+> previous data point to compare it to. In a multiple-instance deployment of the OpenTelemetry Collector,
+> this conversion can produce inconsistent data unless it can be guaranteed that metrics from the same source
+> are processed by the same collector instance.
 
 ### Running alongside Dynatrace OneAgent (preferred)
 
