@@ -259,18 +259,18 @@ Default: `5000`
 ## Cumulative Data Points
 
 When receiving Sum or Histogram metrics with CUMULATIVE temporality, this exporter
-needs to perform CUMULATIVE to DELTA conversion. This conversion can lead to missing
-or inconsistent data, as described below.
+performs CUMULATIVE to DELTA conversion. This conversion can lead to missing
+or inconsistent data, as described below:
 
 ### First Data Points are dropped
 
-Due to the conversion the exporter will drop the first received data point,
-as there is no previous data point to compare it to. This can be circumvented by
-exporting DELTA values from the OpenTelemetry SDK.
+Due to the conversion, the exporter will drop the first received data point,
+as there is no previous data point to compare it to. This can be circumvented
+by configuring the OpenTelemetry SDK to export DELTA values.
 
-### Multi-instance deployment
+### Multi-instance collector deployment
 
-In a multiple-instance deployment of the OpenTelemetry Collector, the conversion
-can produce inconsistent data unless it can be guaranteed that metrics from the
-same source are processed by the same collector instance. This can be circumvented
-by exporting DELTA values from the OpenTelemetry SDK.
+In a multiple-instance deployment of the OpenTelemetry Collector, the conversion 
+can produce inconsistent data unless it can be guaranteed that metrics from the 
+same source are processed by the same collector instance. This can be circumvented 
+by configuring the OpenTelemetry SDK to export DELTA values.
