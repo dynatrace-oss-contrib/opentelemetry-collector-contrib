@@ -26,7 +26,7 @@ To see all available options, see [Advanced Configuration](#advanced-configurati
 
 > When using this exporter, it is strongly RECOMMENDED to configure the OpenTelemetry SDKs to export metrics 
 > with DELTA temporality. If you are exporting Sum or Histogram metrics with CUMULATIVE temporality, read
-> about possible limitations of this exporter [here](#cumulative-data-points).
+> about possible limitations of this exporter [here](#considerations-when-exporting-cumulative-data-points).
 
 ### Running alongside Dynatrace OneAgent (preferred)
 
@@ -254,21 +254,19 @@ Default: `5000`
 
 **Deprecated: Please use [default_dimensions](#default_dimensions-optional) instead**
 
-# Limitations
-
-## Cumulative Data Points
+# Considerations when exporting Cumulative Data Points
 
 When receiving Sum or Histogram metrics with CUMULATIVE temporality, this exporter
 performs CUMULATIVE to DELTA conversion. This conversion can lead to missing
 or inconsistent data, as described below:
 
-### First Data Points are dropped
+## First Data Points are dropped
 
 Due to the conversion, the exporter will drop the first received data point,
 as there is no previous data point to compare it to. This can be circumvented
 by configuring the OpenTelemetry SDK to export DELTA values.
 
-### Multi-instance collector deployment
+## Multi-instance collector deployment
 
 In a multiple-instance deployment of the OpenTelemetry Collector, the conversion 
 can produce inconsistent data unless it can be guaranteed that metrics from the 
