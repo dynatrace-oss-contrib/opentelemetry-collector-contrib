@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package serialization
+package instrument_serialization
 
 import (
 	"math"
@@ -179,7 +179,7 @@ func Test_serializeGauge(t *testing.T) {
 				}
 			}
 
-			actual := serializeGauge(logger, tt.args.prefix, metric, tt.args.defaultDimensions, tt.args.staticDimensions, []string{})
+			actual := SerializeGauge(logger, tt.args.prefix, metric, tt.args.defaultDimensions, tt.args.staticDimensions, []string{})
 
 			assert.ElementsMatch(t, actual, tt.want)
 

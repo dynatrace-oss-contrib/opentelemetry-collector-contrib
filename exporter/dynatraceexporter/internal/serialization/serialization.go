@@ -18,7 +18,7 @@ import (
 	"fmt"
 
 	"github.com/dynatrace-oss/dynatrace-metric-utils-go/metric/dimensions"
-	"go.opentelemetry.io/collector/pdata/pcommon"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter/internal/serialization/instrument_serialization"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
@@ -33,11 +33,11 @@ func SerializeMetric(logger *zap.Logger, prefix string, metric pmetric.Metric, d
 
 	switch metric.DataType() {
 	case pmetric.MetricDataTypeGauge:
-		metricLines = serializeGauge(logger, prefix, metric, defaultDimensions, staticDimensions, metricLines)
+		metricLines = instrument_serialization.SerializeGauge(logger, prefix, metric, defaultDimensions, staticDimensions, metricLines)
 	case pmetric.MetricDataTypeSum:
-		metricLines = serializeSum(logger, prefix, metric, defaultDimensions, staticDimensions, prev, metricLines)
+		metricLines = instrument_serialization.SerializeSum(logger, prefix, metric, defaultDimensions, staticDimensions, prev, metricLines)
 	case pmetric.MetricDataTypeHistogram:
-		metricLines = serializeHistogram(logger, prefix, metric, defaultDimensions, staticDimensions, metricLines)
+		metricLines = instrument_serialization.SerializeHistogram(logger, prefix, metric, defaultDimensions, staticDimensions, metricLines)
 	default:
 		return nil, fmt.Errorf("metric type %s unsupported", metric.DataType().String())
 	}
@@ -47,18 +47,4 @@ func SerializeMetric(logger *zap.Logger, prefix string, metric pmetric.Metric, d
 	}
 
 	return metricLines, nil
-}
-
-func makeCombinedDimensions(defaultDimensions dimensions.NormalizedDimensionList, dataPointAttributes pcommon.Map, staticDimensions dimensions.NormalizedDimensionList) dimensions.NormalizedDimensionList {
-	dimsFromAttributes := make([]dimensions.Dimension, 0, dataPointAttributes.Len())
-
-	dataPointAttributes.Range(func(k string, v pcommon.Value) bool {
-		dimsFromAttributes = append(dimsFromAttributes, dimensions.NewDimension(k, v.AsString()))
-		return true
-	})
-	return dimensions.MergeLists(
-		defaultDimensions,
-		dimensions.NewNormalizedDimensionList(dimsFromAttributes...),
-		staticDimensions,
-	)
 }

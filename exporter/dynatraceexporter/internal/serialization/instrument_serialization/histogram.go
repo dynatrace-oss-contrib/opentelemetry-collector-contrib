@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package serialization // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter/internal/serialization"
+package instrument_serialization // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter/internal/serialization"
 
 import (
 	"go.uber.org/zap"
@@ -44,7 +44,7 @@ func serializeHistogramPoint(name, prefix string, dims dimensions.NormalizedDime
 	return dm.Serialize()
 }
 
-func serializeHistogram(logger *zap.Logger, prefix string, metric pmetric.Metric, defaultDimensions dimensions.NormalizedDimensionList, staticDimensions dimensions.NormalizedDimensionList, metricLines []string) []string {
+func SerializeHistogram(logger *zap.Logger, prefix string, metric pmetric.Metric, defaultDimensions dimensions.NormalizedDimensionList, staticDimensions dimensions.NormalizedDimensionList, metricLines []string) []string {
 	hist := metric.Histogram()
 
 	if hist.AggregationTemporality() == pmetric.MetricAggregationTemporalityCumulative {

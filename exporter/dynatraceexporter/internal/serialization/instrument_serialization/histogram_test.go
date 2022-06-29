@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package serialization
+package instrument_serialization
 
 import (
 	"testing"
@@ -335,7 +335,7 @@ func Test_serializeHistogram(t *testing.T) {
 		zapCore, observedLogs := observer.New(zap.WarnLevel)
 		logger := zap.New(zapCore)
 
-		lines := serializeHistogram(logger, "", metric, emptyDims, emptyDims, []string{})
+		lines := SerializeHistogram(logger, "", metric, emptyDims, emptyDims, []string{})
 		assert.Empty(t, lines)
 
 		actualLogRecords := makeSimplifiedLogRecordsFromObservedLogs(observedLogs)
@@ -369,7 +369,7 @@ func Test_serializeHistogram(t *testing.T) {
 		zapCore, observedLogs := observer.New(zap.WarnLevel)
 		logger := zap.New(zapCore)
 
-		lines := serializeHistogram(logger, "", metric, emptyDims, emptyDims, []string{})
+		lines := SerializeHistogram(logger, "", metric, emptyDims, emptyDims, []string{})
 		assert.Empty(t, lines)
 
 		expectedLogRecords := []simplifiedLogRecord{
@@ -400,7 +400,7 @@ func Test_serializeHistogram(t *testing.T) {
 		zapCore, observedLogs := observer.New(zap.WarnLevel)
 		logger := zap.New(zapCore)
 
-		lines := serializeHistogram(logger, "", metric, emptyDims, emptyDims, []string{})
+		lines := SerializeHistogram(logger, "", metric, emptyDims, emptyDims, []string{})
 
 		expectedLines := []string{
 			"metric_name gauge,min=1,max=5,sum=8,count=3",
