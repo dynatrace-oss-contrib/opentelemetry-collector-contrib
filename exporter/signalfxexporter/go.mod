@@ -73,7 +73,7 @@ require (
 require (
 	github.com/jaegertracing/jaeger v1.35.2 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx v0.54.0
-	go.opentelemetry.io/collector/pdata v0.54.0
+	go.opentelemetry.io/collector/pdata v0.55.0
 	golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a
 )
 
