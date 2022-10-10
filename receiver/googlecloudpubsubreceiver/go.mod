@@ -11,7 +11,7 @@ require (
 	go.uber.org/zap v1.23.0
 	google.golang.org/api v0.94.0
 	google.golang.org/genproto v0.0.0-20220804142021-4e6b2dfa6612
-	google.golang.org/grpc v1.49.0
+	google.golang.org/grpc v1.50.0
 )
 
 require (
