@@ -218,6 +218,8 @@ func (e *exporter) sendBatch(ctx context.Context, lines []string) error {
 
 	defer resp.Body.Close()
 
+	responseBody, rbUnmarshalErr := e.unmarshalResponseBody(resp)
+
 	if resp.StatusCode == http.StatusRequestEntityTooLarge {
 		// If a payload is too large, resending it will not help
 		return consumererror.NewPermanent(fmt.Errorf("payload too large"))
@@ -225,19 +227,7 @@ func (e *exporter) sendBatch(ctx context.Context, lines []string) error {
 
 	if resp.StatusCode == http.StatusBadRequest {
 		// At least some metrics were not accepted
-		bodyBytes, err := io.ReadAll(resp.Body)
-		if err != nil {
-			// if the response cannot be read, do not retry the batch as it may have been successful
-			e.settings.Logger.Error("Failed to read response from Dynatrace", zap.Error(err))
-			return nil
-		}
-
-		responseBody := metricsResponse{}
-		if err := json.Unmarshal(bodyBytes, &responseBody); err != nil {
-			// if the response cannot be read, do not retry the batch as it may have been successful
-			bodyStr := string(bodyBytes)
-			bodyStr = truncateString(bodyStr, 1000)
-			e.settings.Logger.Error("Failed to unmarshal response from Dynatrace", zap.Error(err), zap.String("body", bodyStr))
+		if rbUnmarshalErr != nil {
 			return nil
 		}
 
@@ -286,6 +276,14 @@ Write
 		return consumererror.NewPermanent(fmt.Errorf(`Received error response status: "%v"`, resp.Status))
 	}
 
+	if rbUnmarshalErr == nil {
+		e.settings.Logger.Debug(
+			"Response from Dynatrace",
+			zap.Int("accepted-lines", responseBody.Ok),
+			zap.String("status", resp.Status),
+		)
+	}
+
 	// No known errors
 	return nil
 }
@@ -301,6 +299,26 @@ func (e *exporter) start(_ context.Context, host component.Host) (err error) {
 	e.client = client
 
 	return nil
+}
+
+func (e *exporter) unmarshalResponseBody(resp *http.Response) (metricsResponse, error) {
+	bodyBytes, err := io.ReadAll(resp.Body)
+	responseBody := metricsResponse{}
+	if err != nil {
+		// if the response cannot be read, do not retry the batch as it may have been successful
+		e.settings.Logger.Error("Failed to read response from Dynatrace", zap.Error(err))
+		return responseBody, fmt.Errorf("Failed to read response")
+	}
+
+	if err := json.Unmarshal(bodyBytes, &responseBody); err != nil {
+		// if the response cannot be read, do not retry the batch as it may have been successful
+		bodyStr := string(bodyBytes)
+		bodyStr = truncateString(bodyStr, 1000)
+		e.settings.Logger.Error("Failed to unmarshal response from Dynatrace", zap.Error(err), zap.String("body", bodyStr))
+		return responseBody, fmt.Errorf("Failed to unmarshal response")
+	}
+
+	return responseBody, nil
 }
 
 func truncateString(str string, num int) string {
