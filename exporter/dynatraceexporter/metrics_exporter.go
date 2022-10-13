@@ -268,7 +268,6 @@ func (e *exporter) sendBatch(ctx context.Context, lines []string) error {
 	if resp.StatusCode == http.StatusTooManyRequests {
 		return consumererror.NewPermanent(
 			fmt.Errorf("The server responded that too many requests have been sent. Please check your export interval and batch sizes and see https://www.dynatrace.com/support/help/dynatrace-api/basics/access-limit for more information"),
-Write
 		)
 	}
 
