@@ -271,7 +271,7 @@ func (e *exporter) sendBatch(ctx context.Context, lines []string) error {
 		)
 	}
 
-	if resp.StatusCode >= http.StatusBadRequest {
+	if resp.StatusCode > http.StatusBadRequest { // '400 Bad Request' itself is handled above
 		return consumererror.NewPermanent(fmt.Errorf(`Received error response status: "%v"`, resp.Status))
 	}
 
