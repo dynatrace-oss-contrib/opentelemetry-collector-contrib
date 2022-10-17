@@ -277,7 +277,7 @@ func (e *exporter) sendBatch(ctx context.Context, lines []string) error {
 
 	if rbUnmarshalErr == nil {
 		e.settings.Logger.Debug(
-			"Response from Dynatrace",
+			"Export successful. Response from Dynatrace:",
 			zap.Int("accepted-lines", responseBody.Ok),
 			zap.String("status", resp.Status),
 		)
