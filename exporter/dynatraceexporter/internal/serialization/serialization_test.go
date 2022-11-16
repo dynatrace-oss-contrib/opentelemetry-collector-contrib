@@ -31,7 +31,6 @@ import (
 )
 
 func TestSerializeMetric(t *testing.T) {
-	logger := zap.NewNop()
 	defaultDims := dimensions.NewNormalizedDimensionList(dimensions.NewDimension("default", "value"))
 	staticDims := dimensions.NewNormalizedDimensionList(dimensions.NewDimension("static", "value"))
 
@@ -43,7 +42,8 @@ func TestSerializeMetric(t *testing.T) {
 
 		prev := ttlmap.New(1, 1)
 
-		serialized, err := SerializeMetric(logger, "prefix", metric, defaultDims, staticDims, prev)
+		serializer := CreateSerializer(zap.NewNop())
+		serialized, err := serializer.SerializeMetric("prefix", metric, defaultDims, staticDims, prev)
 		assert.NoError(t, err)
 
 		assert.Len(t, serialized, 1)
@@ -63,7 +63,8 @@ func TestSerializeMetric(t *testing.T) {
 
 		prev := ttlmap.New(1, 1)
 
-		serialized, err := SerializeMetric(logger, "prefix", metric, defaultDims, staticDims, prev)
+		serializer := CreateSerializer(zap.NewNop())
+		serialized, err := serializer.SerializeMetric("prefix", metric, defaultDims, staticDims, prev)
 		assert.NoError(t, err)
 
 		assert.Len(t, serialized, 1)
@@ -84,7 +85,8 @@ func TestSerializeMetric(t *testing.T) {
 
 		prev := ttlmap.New(1, 1)
 
-		serialized, err := SerializeMetric(logger, "prefix", metric, defaultDims, staticDims, prev)
+		serializer := CreateSerializer(zap.NewNop())
+		serialized, err := serializer.SerializeMetric("prefix", metric, defaultDims, staticDims, prev)
 		assert.NoError(t, err)
 
 		assert.Len(t, serialized, 1)
@@ -112,7 +114,8 @@ func Test_makeCombinedDimensions(t *testing.T) {
 		dimensions.NewDimension("c", "default"),
 	)
 
-	actual := makeCombinedDimensions(defaultDims, attributes, staticDims)
+	serializer := CreateSerializer(zap.NewNop())
+	actual := serializer.makeCombinedDimensions(defaultDims, attributes, staticDims)
 
 	sortAndStringify :=
 		func(dims []dimensions.Dimension) string {

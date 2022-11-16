@@ -52,7 +52,7 @@ func serializeGaugePoint(name, prefix string, dims dimensions.NormalizedDimensio
 	return dm.Serialize()
 }
 
-func serializeGauge(logger *zap.Logger, prefix string, metric pmetric.Metric, defaultDimensions dimensions.NormalizedDimensionList, staticDimensions dimensions.NormalizedDimensionList, metricLines []string) []string {
+func (s *Serializer) serializeGauge(prefix string, metric pmetric.Metric, defaultDimensions dimensions.NormalizedDimensionList, staticDimensions dimensions.NormalizedDimensionList, metricLines []string) []string {
 	points := metric.Gauge().DataPoints()
 
 	for i := 0; i < points.Len(); i++ {
@@ -61,12 +61,12 @@ func serializeGauge(logger *zap.Logger, prefix string, metric pmetric.Metric, de
 		line, err := serializeGaugePoint(
 			metric.Name(),
 			prefix,
-			makeCombinedDimensions(defaultDimensions, dp.Attributes(), staticDimensions),
+			s.makeCombinedDimensions(defaultDimensions, dp.Attributes(), staticDimensions),
 			dp,
 		)
 
 		if err != nil {
-			logger.Warn(
+			s.logger.Warn(
 				"Error serializing gauge data point",
 				zap.String("name", metric.Name()),
 				zap.String("value-type", dp.ValueType().String()),

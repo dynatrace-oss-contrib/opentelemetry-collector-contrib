@@ -43,12 +43,12 @@ func serializeHistogramPoint(name, prefix string, dims dimensions.NormalizedDime
 	return dm.Serialize()
 }
 
-func serializeHistogram(logger *zap.Logger, prefix string, metric pmetric.Metric, defaultDimensions dimensions.NormalizedDimensionList, staticDimensions dimensions.NormalizedDimensionList, metricLines []string) []string {
+func (s *Serializer) serializeHistogram(prefix string, metric pmetric.Metric, defaultDimensions dimensions.NormalizedDimensionList, staticDimensions dimensions.NormalizedDimensionList, metricLines []string) []string {
 	hist := metric.Histogram()
 
 	if hist.AggregationTemporality() == pmetric.AggregationTemporalityCumulative {
-		logger.Warn(
-			"dropping cumulative histogram",
+		s.throttledLogger.Warn(
+			"cumulative histogram is an unsupported datatype. Not exported",
 			zap.String("name", metric.Name()),
 		)
 		return metricLines
@@ -60,12 +60,12 @@ func serializeHistogram(logger *zap.Logger, prefix string, metric pmetric.Metric
 		line, err := serializeHistogramPoint(
 			metric.Name(),
 			prefix,
-			makeCombinedDimensions(defaultDimensions, dp.Attributes(), staticDimensions),
+			s.makeCombinedDimensions(defaultDimensions, dp.Attributes(), staticDimensions),
 			dp,
 		)
 
 		if err != nil {
-			logger.Warn(
+			s.logger.Warn(
 				"Error serializing histogram data point",
 				zap.String("name", metric.Name()),
 				zap.Error(err),

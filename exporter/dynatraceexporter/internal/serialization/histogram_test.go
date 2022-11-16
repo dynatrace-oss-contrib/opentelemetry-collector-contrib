@@ -331,9 +331,9 @@ func Test_serializeHistogram(t *testing.T) {
 		hist.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 
 		zapCore, observedLogs := observer.New(zap.WarnLevel)
-		logger := zap.New(zapCore)
+		serializer := CreateSerializer(zap.New(zapCore))
 
-		lines := serializeHistogram(logger, "", metric, emptyDims, emptyDims, []string{})
+		lines := serializer.serializeHistogram("", metric, emptyDims, emptyDims, []string{})
 		assert.Empty(t, lines)
 
 		actualLogRecords := makeSimplifiedLogRecordsFromObservedLogs(observedLogs)
@@ -364,9 +364,9 @@ func Test_serializeHistogram(t *testing.T) {
 		dp.SetSum(30)
 
 		zapCore, observedLogs := observer.New(zap.WarnLevel)
-		logger := zap.New(zapCore)
+		serializer := CreateSerializer(zap.New(zapCore))
 
-		lines := serializeHistogram(logger, "", metric, emptyDims, emptyDims, []string{})
+		lines := serializer.serializeHistogram("", metric, emptyDims, emptyDims, []string{})
 		assert.Empty(t, lines)
 
 		expectedLogRecords := []simplifiedLogRecord{
@@ -394,9 +394,9 @@ func Test_serializeHistogram(t *testing.T) {
 		dp.SetSum(8)
 
 		zapCore, observedLogs := observer.New(zap.WarnLevel)
-		logger := zap.New(zapCore)
+		serializer := CreateSerializer(zap.New(zapCore))
 
-		lines := serializeHistogram(logger, "", metric, emptyDims, emptyDims, []string{})
+		lines := serializer.serializeHistogram("", metric, emptyDims, emptyDims, []string{})
 
 		expectedLines := []string{
 			"metric_name gauge,min=1,max=5,sum=8,count=3",

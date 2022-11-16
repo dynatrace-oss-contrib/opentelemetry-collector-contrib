@@ -61,6 +61,7 @@ func newMetricsExporter(params component.ExporterCreateSettings, cfg *config.Con
 	return &exporter{
 		settings:          params.TelemetrySettings,
 		cfg:               cfg,
+		serializer:        serialization.CreateSerializer(params.Logger),
 		defaultDimensions: defaultDimensions,
 		staticDimensions:  staticDimensions,
 		prevPts:           prevPts,
@@ -73,6 +74,7 @@ type exporter struct {
 	cfg        *config.Config
 	client     *http.Client
 	isDisabled bool
+	serializer *serialization.Serializer
 
 	defaultDimensions dimensions.NormalizedDimensionList
 	staticDimensions  dimensions.NormalizedDimensionList
@@ -133,7 +135,7 @@ func (e *exporter) serializeMetrics(md pmetric.Metrics) []string {
 			for k := 0; k < metrics.Len(); k++ {
 				metric := metrics.At(k)
 
-				metricLines, err := serialization.SerializeMetric(e.settings.Logger, e.cfg.Prefix, metric, e.defaultDimensions, e.staticDimensions, e.prevPts)
+				metricLines, err := e.serializer.SerializeMetric(e.cfg.Prefix, metric, e.defaultDimensions, e.staticDimensions, e.prevPts)
 
 				if err != nil {
 					e.settings.Logger.Warn(

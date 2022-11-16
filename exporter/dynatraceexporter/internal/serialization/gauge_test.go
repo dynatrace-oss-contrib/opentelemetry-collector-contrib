@@ -158,6 +158,7 @@ func Test_serializeGauge(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			zapCore, observedLogs := observer.New(zap.WarnLevel)
 			logger := zap.New(zapCore)
+			serializer := CreateSerializer(logger)
 
 			metric := pmetric.NewMetric()
 			metric.SetName(tt.args.metricName)
@@ -177,7 +178,7 @@ func Test_serializeGauge(t *testing.T) {
 				}
 			}
 
-			actual := serializeGauge(logger, tt.args.prefix, metric, tt.args.defaultDimensions, tt.args.staticDimensions, []string{})
+			actual := serializer.serializeGauge(tt.args.prefix, metric, tt.args.defaultDimensions, tt.args.staticDimensions, []string{})
 
 			assert.ElementsMatch(t, actual, tt.want)
 

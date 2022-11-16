@@ -40,12 +40,12 @@ func serializeSumPoint(name, prefix string, dims dimensions.NormalizedDimensionL
 	return "", nil
 }
 
-func serializeSum(logger *zap.Logger, prefix string, metric pmetric.Metric, defaultDimensions dimensions.NormalizedDimensionList, staticDimensions dimensions.NormalizedDimensionList, prev *ttlmap.TTLMap, metricLines []string) []string {
+func (s *Serializer) serializeSum(prefix string, metric pmetric.Metric, defaultDimensions dimensions.NormalizedDimensionList, staticDimensions dimensions.NormalizedDimensionList, prev *ttlmap.TTLMap, metricLines []string) []string {
 	sum := metric.Sum()
 
 	if !sum.IsMonotonic() && sum.AggregationTemporality() == pmetric.AggregationTemporalityDelta {
-		logger.Warn(
-			"dropping delta non-monotonic sum",
+		s.throttledLogger.Warn(
+			"non-monotonic sum with delta temporality unsupported. Not exported",
 			zap.String("name", metric.Name()),
 		)
 		return metricLines
@@ -60,14 +60,14 @@ func serializeSum(logger *zap.Logger, prefix string, metric pmetric.Metric, defa
 			line, err := serializeSumPoint(
 				metric.Name(),
 				prefix,
-				makeCombinedDimensions(defaultDimensions, dp.Attributes(), staticDimensions),
+				s.makeCombinedDimensions(defaultDimensions, dp.Attributes(), staticDimensions),
 				metric.Sum().AggregationTemporality(),
 				dp,
 				prev,
 			)
 
 			if err != nil {
-				logger.Warn(
+				s.logger.Warn(
 					"Error serializing sum data point",
 					zap.String("name", metric.Name()),
 					zap.String("value-type", dp.ValueType().String()),
@@ -83,12 +83,12 @@ func serializeSum(logger *zap.Logger, prefix string, metric pmetric.Metric, defa
 			line, err := serializeGaugePoint(
 				metric.Name(),
 				prefix,
-				makeCombinedDimensions(defaultDimensions, dp.Attributes(), staticDimensions),
+				s.makeCombinedDimensions(defaultDimensions, dp.Attributes(), staticDimensions),
 				dp,
 			)
 
 			if err != nil {
-				logger.Warn(
+				s.logger.Warn(
 					"Error serializing non-monotonic Sum as gauge",
 					zap.String("name", metric.Name()),
 					zap.String("value-type", dp.ValueType().String()),

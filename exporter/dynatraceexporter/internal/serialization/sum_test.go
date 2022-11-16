@@ -179,9 +179,9 @@ func Test_serializeSum(t *testing.T) {
 		prev := ttlmap.New(10, 10)
 
 		zapCore, observedLogs := observer.New(zap.WarnLevel)
-		logger := zap.New(zapCore)
+		serializer := CreateSerializer(zap.New(zapCore))
 
-		lines := serializeSum(logger, "", metric, empty, empty, prev, []string{})
+		lines := serializer.serializeSum("", metric, empty, empty, prev, []string{})
 
 		assert.Empty(t, lines)
 
@@ -211,9 +211,9 @@ func Test_serializeSum(t *testing.T) {
 			prev := ttlmap.New(10, 10)
 
 			zapCore, observedLogs := observer.New(zap.WarnLevel)
-			logger := zap.New(zapCore)
+			serializer := CreateSerializer(zap.New(zapCore))
 
-			actualLines := serializeSum(logger, "", metric, empty, empty, prev, []string{})
+			actualLines := serializer.serializeSum("", metric, empty, empty, prev, []string{})
 
 			expectedLines := []string{
 				"metric_name count,delta=12",
@@ -228,9 +228,9 @@ func Test_serializeSum(t *testing.T) {
 			prev := ttlmap.New(10, 10)
 
 			zapCore, observedLogs := observer.New(zap.WarnLevel)
-			logger := zap.New(zapCore)
+			serializer := CreateSerializer(zap.New(zapCore))
 
-			actualLines := serializeSum(logger, "", metric, empty, empty, prev, []string{})
+			actualLines := serializer.serializeSum("", metric, empty, empty, prev, []string{})
 
 			expectedLogRecords := []simplifiedLogRecord{
 				{
@@ -264,9 +264,9 @@ func Test_serializeSum(t *testing.T) {
 			prev := ttlmap.New(10, 10)
 
 			zapCore, observedLogs := observer.New(zap.WarnLevel)
-			logger := zap.New(zapCore)
+			serializer := CreateSerializer(zap.New(zapCore))
 
-			actualLines := serializeSum(logger, "", metric, empty, empty, prev, []string{})
+			actualLines := serializer.serializeSum("", metric, empty, empty, prev, []string{})
 
 			expectedLines := []string{
 				"metric_name gauge,12.3",
@@ -283,9 +283,9 @@ func Test_serializeSum(t *testing.T) {
 			prev := ttlmap.New(10, 10)
 
 			zapCore, observedLogs := observer.New(zap.WarnLevel)
-			logger := zap.New(zapCore)
+			serializer := CreateSerializer(zap.New(zapCore))
 
-			actualLines := serializeSum(logger, "", metric, empty, empty, prev, []string{})
+			actualLines := serializer.serializeSum("", metric, empty, empty, prev, []string{})
 
 			expectedLogRecords := []simplifiedLogRecord{
 				{
@@ -324,9 +324,9 @@ func Test_serializeSum(t *testing.T) {
 			prev := ttlmap.New(10, 10)
 
 			zapCore, observedLogs := observer.New(zap.WarnLevel)
-			logger := zap.New(zapCore)
+			serializer := CreateSerializer(zap.New(zapCore))
 
-			actualLines := serializeSum(logger, "", metric, empty, empty, prev, []string{})
+			actualLines := serializer.serializeSum("", metric, empty, empty, prev, []string{})
 
 			expectedLines := []string{
 				"metric_name count,delta=0.5",
@@ -344,9 +344,9 @@ func Test_serializeSum(t *testing.T) {
 			prev := ttlmap.New(10, 10)
 
 			zapCore, observedLogs := observer.New(zap.WarnLevel)
-			logger := zap.New(zapCore)
+			serializer := CreateSerializer(zap.New(zapCore))
 
-			actualLines := serializeSum(logger, "", metric, empty, empty, prev, []string{})
+			actualLines := serializer.serializeSum("", metric, empty, empty, prev, []string{})
 
 			expectedLogRecords := []simplifiedLogRecord{
 				{
@@ -371,9 +371,9 @@ func Test_serializeSum(t *testing.T) {
 			prev := ttlmap.New(10, 10)
 
 			zapCore, observedLogs := observer.New(zap.WarnLevel)
-			logger := zap.New(zapCore)
+			serializer := CreateSerializer(zap.New(zapCore))
 
-			actualLines := serializeSum(logger, "", metric, empty, empty, prev, []string{})
+			actualLines := serializer.serializeSum("", metric, empty, empty, prev, []string{})
 
 			expectedLogRecords := []simplifiedLogRecord{
 				{
