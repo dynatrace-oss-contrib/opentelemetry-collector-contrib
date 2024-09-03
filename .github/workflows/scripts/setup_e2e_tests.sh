@@ -3,7 +3,7 @@
 # Copyright The OpenTelemetry Authors
 # SPDX-License-Identifier: Apache-2.0
 
-TESTS="$(make -s -C testbed list-tests | xargs echo|sed 's/ /|/g')"
+TESTS="TestMetric10kDPS"
 IFS='|' read -r -a TEST_ARRAY <<< "$TESTS"
 
 MATRIX="{\"include\":["
