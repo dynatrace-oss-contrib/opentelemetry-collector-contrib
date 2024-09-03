@@ -3,7 +3,7 @@
 # Copyright The OpenTelemetry Authors
 # SPDX-License-Identifier: Apache-2.0
 
-TESTS="TestMetric10kDPS"
+TESTS="TestMetric10kDPS|"
 IFS='|' read -r -a TEST_ARRAY <<< "$TESTS"
 
 MATRIX="{\"include\":["
