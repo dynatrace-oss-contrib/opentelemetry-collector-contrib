@@ -36,8 +36,9 @@ func (dr *prometheusDataReceiver) Start(_ consumer.Traces, mc consumer.Metrics, 
 	cfg.PrometheusConfig = &prometheusreceiver.PromConfig{
 		ScrapeConfigs: []*promconfig.ScrapeConfig{{
 			JobName:        "testbed-job",
-			ScrapeInterval: model.Duration(100 * time.Millisecond),
-			ScrapeTimeout:  model.Duration(time.Second),
+			ScrapeInterval: model.Duration(200 * time.Millisecond),
+			ScrapeTimeout:  model.Duration(99 * time.Millisecond),
+			ScrapeProtocols: promconfig.DefaultScrapeProtocols,
 			ServiceDiscoveryConfigs: discovery.Configs{
 				&discovery.StaticConfig{
 					{
