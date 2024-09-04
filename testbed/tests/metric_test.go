@@ -75,7 +75,7 @@ func TestMetric10kDPS(t *testing.T) {
 		// },
 		{
 			name:     "Prom-Scrape",
-			sender: datasenders.NewPrometheusDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t)),
+			sender:   datasenders.NewPrometheusDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t)),
 			receiver: datareceivers.NewPrometheusDataReceiver(testutil.GetAvailablePort(t)),
 			resourceSpec: testbed.ResourceSpec{
 				ExpectedMaxCPU: 60,
