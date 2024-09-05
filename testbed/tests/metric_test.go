@@ -106,8 +106,8 @@ func TestMetric10kDPSPrometheus(t *testing.T) {
 			sender:   datasenders.NewPrometheusDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t)),
 			receiver: datareceivers.NewPrometheusDataReceiver(testutil.GetAvailablePort(t)),
 			resourceSpec: testbed.ResourceSpec{
-				ExpectedMaxCPU: 500,
-				ExpectedMaxRAM: 500,
+				ExpectedMaxCPU: 100,
+				ExpectedMaxRAM: 100,
 			},
 		},
 	}

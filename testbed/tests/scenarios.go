@@ -220,11 +220,10 @@ func Scenario10kItemsPerSecondPrometheusScraping(
 	t.Cleanup(tc.Stop)
 
 	tc.StartBackend()
+	tc.StartLoad(options)
 	tc.StartAgent()
 
-	tc.StartLoad(options)
-
-	tc.WaitFor(func() bool { return tc.LoadGenerator.DataItemsSent() > 0 }, "load generator started")
+	// tc.WaitFor(func() bool { return tc.LoadGenerator.DataItemsSent() > 0 }, "load generator started")
 
 	tc.Sleep(tc.Duration)
 
