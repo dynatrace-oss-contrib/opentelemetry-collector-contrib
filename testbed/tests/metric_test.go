@@ -28,58 +28,49 @@ func TestMetric10kDPS(t *testing.T) {
 		resourceSpec testbed.ResourceSpec
 		skipMessage  string
 	}{
-		// {
-		// 	name:     "Carbon",
-		// 	sender:   datasenders.NewCarbonDataSender(testutil.GetAvailablePort(t)),
-		// 	receiver: datareceivers.NewCarbonDataReceiver(testutil.GetAvailablePort(t)),
-		// 	resourceSpec: testbed.ResourceSpec{
-		// 		ExpectedMaxCPU: 237,
-		// 		ExpectedMaxRAM: 105,
-		// 	},
-		// },
-		// {
-		// 	name:     "OpenCensus",
-		// 	sender:   datasenders.NewOCMetricDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t)),
-		// 	receiver: datareceivers.NewOCDataReceiver(testutil.GetAvailablePort(t)),
-		// 	resourceSpec: testbed.ResourceSpec{
-		// 		ExpectedMaxCPU: 85,
-		// 		ExpectedMaxRAM: 100,
-		// 	},
-		// },
-		// {
-		// 	name:     "OTLP",
-		// 	sender:   testbed.NewOTLPMetricDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t)),
-		// 	receiver: testbed.NewOTLPDataReceiver(testutil.GetAvailablePort(t)),
-		// 	resourceSpec: testbed.ResourceSpec{
-		// 		ExpectedMaxCPU: 60,
-		// 		ExpectedMaxRAM: 105,
-		// 	},
-		// },
-		// {
-		// 	name:     "OTLP-HTTP",
-		// 	sender:   testbed.NewOTLPHTTPMetricDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t)),
-		// 	receiver: testbed.NewOTLPHTTPDataReceiver(testutil.GetAvailablePort(t)),
-		// 	resourceSpec: testbed.ResourceSpec{
-		// 		ExpectedMaxCPU: 60,
-		// 		ExpectedMaxRAM: 100,
-		// 	},
-		// },
-		// {
-		// 	name:     "SignalFx",
-		// 	sender:   datasenders.NewSFxMetricDataSender(testutil.GetAvailablePort(t)),
-		// 	receiver: datareceivers.NewSFxMetricsDataReceiver(testutil.GetAvailablePort(t)),
-		// 	resourceSpec: testbed.ResourceSpec{
-		// 		ExpectedMaxCPU: 120,
-		// 		ExpectedMaxRAM: 98,
-		// 	},
-		// },
 		{
-			name:     "Prom-Scrape",
-			sender:   datasenders.NewPrometheusDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t)),
-			receiver: datareceivers.NewPrometheusDataReceiver(testutil.GetAvailablePort(t)),
+			name:     "Carbon",
+			sender:   datasenders.NewCarbonDataSender(testutil.GetAvailablePort(t)),
+			receiver: datareceivers.NewCarbonDataReceiver(testutil.GetAvailablePort(t)),
 			resourceSpec: testbed.ResourceSpec{
-				ExpectedMaxCPU: 500,
-				ExpectedMaxRAM: 500,
+				ExpectedMaxCPU: 237,
+				ExpectedMaxRAM: 105,
+			},
+		},
+		{
+			name:     "OpenCensus",
+			sender:   datasenders.NewOCMetricDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t)),
+			receiver: datareceivers.NewOCDataReceiver(testutil.GetAvailablePort(t)),
+			resourceSpec: testbed.ResourceSpec{
+				ExpectedMaxCPU: 85,
+				ExpectedMaxRAM: 100,
+			},
+		},
+		{
+			name:     "OTLP",
+			sender:   testbed.NewOTLPMetricDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t)),
+			receiver: testbed.NewOTLPDataReceiver(testutil.GetAvailablePort(t)),
+			resourceSpec: testbed.ResourceSpec{
+				ExpectedMaxCPU: 60,
+				ExpectedMaxRAM: 105,
+			},
+		},
+		{
+			name:     "OTLP-HTTP",
+			sender:   testbed.NewOTLPHTTPMetricDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t)),
+			receiver: testbed.NewOTLPHTTPDataReceiver(testutil.GetAvailablePort(t)),
+			resourceSpec: testbed.ResourceSpec{
+				ExpectedMaxCPU: 60,
+				ExpectedMaxRAM: 100,
+			},
+		},
+		{
+			name:     "SignalFx",
+			sender:   datasenders.NewSFxMetricDataSender(testutil.GetAvailablePort(t)),
+			receiver: datareceivers.NewSFxMetricsDataReceiver(testutil.GetAvailablePort(t)),
+			resourceSpec: testbed.ResourceSpec{
+				ExpectedMaxCPU: 120,
+				ExpectedMaxRAM: 98,
 			},
 		},
 	}
@@ -100,7 +91,43 @@ func TestMetric10kDPS(t *testing.T) {
 			)
 		})
 	}
+}
 
+func TestMetric10kDPSPrometheus(t *testing.T) {
+	tests := []struct {
+		name         string
+		sender       testbed.DataSender
+		receiver     testbed.DataReceiver
+		resourceSpec testbed.ResourceSpec
+		skipMessage  string
+	}{
+		{
+			name:     "Prom-Scrape",
+			sender:   datasenders.NewPrometheusDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t)),
+			receiver: datareceivers.NewPrometheusDataReceiver(testutil.GetAvailablePort(t)),
+			resourceSpec: testbed.ResourceSpec{
+				ExpectedMaxCPU: 500,
+				ExpectedMaxRAM: 500,
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if test.skipMessage != "" {
+				t.Skip(test.skipMessage)
+			}
+			Scenario10kItemsPerSecondPrometheusScraping(
+				t,
+				test.sender,
+				test.receiver,
+				test.resourceSpec,
+				performanceResultsSummary,
+				nil,
+				nil,
+			)
+		})
+	}
 }
 
 func TestMetricsFromFile(t *testing.T) {

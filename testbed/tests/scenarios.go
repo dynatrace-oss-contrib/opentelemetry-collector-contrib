@@ -181,6 +181,61 @@ func Scenario10kItemsPerSecond(
 	tc.ValidateData()
 }
 
+// Scenario10kItemsPerSecondPrometheusScraping runs 10k data items/sec test using prometheus scraping
+func Scenario10kItemsPerSecondPrometheusScraping(
+	t *testing.T,
+	sender testbed.DataSender,
+	receiver testbed.DataReceiver,
+	resourceSpec testbed.ResourceSpec,
+	resultsSummary testbed.TestResultsSummary,
+	processors map[string]string,
+	extensions map[string]string,
+) {
+	resultDir, err := filepath.Abs(path.Join("results", t.Name()))
+	require.NoError(t, err)
+
+	options := testbed.LoadOptions{
+		DataItemsPerSecond: 10_000,
+		ItemsPerBatch:      100,
+		Parallel:           1,
+	}
+	agentProc := testbed.NewChildProcessCollector(testbed.WithEnvVar("GOMAXPROCS", "2"))
+
+	configStr := createConfigYaml(t, sender, receiver, resultDir, processors, extensions)
+	configCleanup, err := agentProc.PrepareConfig(configStr)
+	require.NoError(t, err)
+	defer configCleanup()
+
+	dataProvider := testbed.NewPerfTestDataProvider(options)
+	tc := testbed.NewTestCase(
+		t,
+		dataProvider,
+		sender,
+		receiver,
+		agentProc,
+		&testbed.PerfTestValidator{},
+		resultsSummary,
+		testbed.WithResourceLimits(resourceSpec),
+	)
+	t.Cleanup(tc.Stop)
+
+	tc.StartBackend()
+	tc.StartAgent()
+
+	tc.StartLoad(options)
+
+	tc.WaitFor(func() bool { return tc.LoadGenerator.DataItemsSent() > 0 }, "load generator started")
+
+	tc.Sleep(tc.Duration)
+
+	tc.StopLoad()
+
+	tc.WaitFor(func() bool { return tc.LoadGenerator.DataItemsSent() == tc.MockBackend.DataItemsReceived() },
+		"all data items received")
+
+	tc.ValidateData()
+}
+
 // Scenario10kItemsPerSecondAlternateBackend runs 10k data items/sec test using specified sender and receiver protocols.
 // The only difference from Scenario10kItemsPerSecond is that this method can be used to specify a different backend. This
 // is useful when testing components for which there is no exporter that emits the same format as the receiver format.
