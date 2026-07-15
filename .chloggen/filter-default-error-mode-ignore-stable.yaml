@@ -6,9 +6,6 @@ note: Promote the `processor.filter.defaultErrorModeIgnore` feature gate to stab
 
 issues: [47232]
 
-subtext: |
-  The `processor.filter.defaultErrorModeIgnore` feature gate is now stable and always enabled.
-  The `error_mode` default is permanently `ignore`. The gate will be removed in v0.159.0.
-  If you were relying on `propagate` as the default, explicitly set `error_mode: propagate` in your filter processor configuration.
+subtext: The gate will be removed in v0.159.0.
 
 change_logs: [user]
