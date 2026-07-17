@@ -79,12 +79,6 @@ linters:
         path: receiver/macosunifiedloggingreceiver/config_common.go
         text: resolvedArchivePaths
 
-      # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45002
-      - linters:
-          - revive
-        path: processor/transformprocessor/internal/common/
-        text: "var-naming: avoid meaningless package names"
-
       # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45004
       - linters:
           - revive

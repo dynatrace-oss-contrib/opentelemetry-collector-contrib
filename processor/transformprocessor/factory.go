@@ -24,7 +24,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlprofile"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/contexts"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/logs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metrics"
@@ -200,10 +200,10 @@ func NewFactoryWithOptions(options ...FactoryOption) processor.Factory {
 func (f *transformProcessorFactory) createDefaultConfig() component.Config {
 	return &Config{
 		ErrorMode:          ottl.IgnoreError,
-		TraceStatements:    []common.ContextStatements{},
-		MetricStatements:   []common.ContextStatements{},
-		LogStatements:      []common.ContextStatements{},
-		ProfileStatements:  []common.ContextStatements{},
+		TraceStatements:    []contexts.ContextStatements{},
+		MetricStatements:   []contexts.ContextStatements{},
+		LogStatements:      []contexts.ContextStatements{},
+		ProfileStatements:  []contexts.ContextStatements{},
 		dataPointFunctions: f.dataPointFunctions,
 		exemplarFunctions:  f.exemplarFunctions,
 		logFunctions:       f.logFunctions,

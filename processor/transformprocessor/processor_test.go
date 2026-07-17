@@ -14,7 +14,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/contexts"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metadata"
 )
 
@@ -38,7 +38,7 @@ func TestProcessLogsWithoutFlatten(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
-	oCfg.LogStatements = []common.ContextStatements{
+	oCfg.LogStatements = []contexts.ContextStatements{
 		{
 			Context: "log",
 			Statements: []string{
@@ -69,7 +69,7 @@ func TestProcessLogsWithFlatten(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
 	oCfg.FlattenData = true
-	oCfg.LogStatements = []common.ContextStatements{
+	oCfg.LogStatements = []contexts.ContextStatements{
 		{
 			Context: "log",
 			Statements: []string{
@@ -99,7 +99,7 @@ func BenchmarkLogsWithoutFlatten(b *testing.B) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
-	oCfg.LogStatements = []common.ContextStatements{
+	oCfg.LogStatements = []contexts.ContextStatements{
 		{
 			Context: "log",
 			Statements: []string{
@@ -125,7 +125,7 @@ func BenchmarkLogsWithFlatten(b *testing.B) {
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
 	oCfg.FlattenData = true
-	oCfg.LogStatements = []common.ContextStatements{
+	oCfg.LogStatements = []contexts.ContextStatements{
 		{
 			Context: "log",
 			Statements: []string{

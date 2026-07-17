@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package common // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
+package contexts // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/contexts"
 
 import (
 	"fmt"
@@ -53,7 +53,7 @@ func (c ContextStatements) GetStatements() []string {
 func toContextStatements(statements any) (*ContextStatements, error) {
 	contextStatements, ok := statements.(ContextStatements)
 	if !ok {
-		return nil, fmt.Errorf("invalid context statements type, expected: common.ContextStatements, got: %T", statements)
+		return nil, fmt.Errorf("invalid context statements type, expected: ottlcontext.ContextStatements, got: %T", statements)
 	}
 	return &contextStatements, nil
 }

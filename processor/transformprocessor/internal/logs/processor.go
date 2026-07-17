@@ -14,22 +14,22 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/contexts"
 )
 
 type Processor struct {
-	contexts []common.LogsConsumer
+	contexts []contexts.LogsConsumer
 	logger   *zap.Logger
 	flatMode bool
 }
 
-func NewProcessor(contextStatements []common.ContextStatements, errorMode ottl.ErrorMode, flatMode bool, settings component.TelemetrySettings, logFunctions map[string]ottl.Factory[*ottllog.TransformContext]) (*Processor, error) {
-	pc, err := common.NewLogParserCollection(settings, common.WithLogParser(logFunctions), common.WithLogErrorMode(errorMode))
+func NewProcessor(contextStatements []contexts.ContextStatements, errorMode ottl.ErrorMode, flatMode bool, settings component.TelemetrySettings, logFunctions map[string]ottl.Factory[*ottllog.TransformContext]) (*Processor, error) {
+	pc, err := contexts.NewLogParserCollection(settings, contexts.WithLogParser(logFunctions), contexts.WithLogErrorMode(errorMode))
 	if err != nil {
 		return nil, err
 	}
 
-	contexts := make([]common.LogsConsumer, len(contextStatements))
+	contexts := make([]contexts.LogsConsumer, len(contextStatements))
 	var errors error
 	for i, cs := range contextStatements {
 		context, err := pc.ParseContextStatements(cs)

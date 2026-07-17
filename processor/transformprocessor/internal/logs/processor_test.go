@@ -17,7 +17,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/contexts"
 )
 
 var (
@@ -60,7 +60,7 @@ func Test_ProcessLogs_ResourceContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.statement, func(t *testing.T) {
 			td := constructLogs()
-			processor, err := NewProcessor([]common.ContextStatements{{Context: "resource", Statements: []string{tt.statement}}}, ottl.IgnoreError, false, componenttest.NewNopTelemetrySettings(), DefaultLogFunctions)
+			processor, err := NewProcessor([]contexts.ContextStatements{{Context: "resource", Statements: []string{tt.statement}}}, ottl.IgnoreError, false, componenttest.NewNopTelemetrySettings(), DefaultLogFunctions)
 			require.NoError(t, err)
 
 			_, err = processor.ProcessLogs(t.Context(), td)
@@ -101,7 +101,7 @@ func Test_ProcessLogs_InferredResourceContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.statement, func(t *testing.T) {
 			td := constructLogs()
-			processor, err := NewProcessor([]common.ContextStatements{{Context: "", Statements: []string{tt.statement}}}, ottl.IgnoreError, false, componenttest.NewNopTelemetrySettings(), DefaultLogFunctions)
+			processor, err := NewProcessor([]contexts.ContextStatements{{Context: "", Statements: []string{tt.statement}}}, ottl.IgnoreError, false, componenttest.NewNopTelemetrySettings(), DefaultLogFunctions)
 			require.NoError(t, err)
 
 			_, err = processor.ProcessLogs(t.Context(), td)
@@ -142,7 +142,7 @@ func Test_ProcessLogs_ScopeContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.statement, func(t *testing.T) {
 			td := constructLogs()
-			processor, err := NewProcessor([]common.ContextStatements{{Context: "scope", Statements: []string{tt.statement}}}, ottl.IgnoreError, false, componenttest.NewNopTelemetrySettings(), DefaultLogFunctions)
+			processor, err := NewProcessor([]contexts.ContextStatements{{Context: "scope", Statements: []string{tt.statement}}}, ottl.IgnoreError, false, componenttest.NewNopTelemetrySettings(), DefaultLogFunctions)
 			require.NoError(t, err)
 
 			_, err = processor.ProcessLogs(t.Context(), td)
@@ -183,7 +183,7 @@ func Test_ProcessLogs_InferredScopeContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.statement, func(t *testing.T) {
 			td := constructLogs()
-			processor, err := NewProcessor([]common.ContextStatements{{Context: "", Statements: []string{tt.statement}}}, ottl.IgnoreError, false, componenttest.NewNopTelemetrySettings(), DefaultLogFunctions)
+			processor, err := NewProcessor([]contexts.ContextStatements{{Context: "", Statements: []string{tt.statement}}}, ottl.IgnoreError, false, componenttest.NewNopTelemetrySettings(), DefaultLogFunctions)
 			require.NoError(t, err)
 
 			_, err = processor.ProcessLogs(t.Context(), td)
@@ -437,7 +437,7 @@ func Test_ProcessLogs_LogContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.statement, func(t *testing.T) {
 			td := constructLogs()
-			processor, err := NewProcessor([]common.ContextStatements{{Context: "log", Statements: []string{tt.statement}}}, ottl.IgnoreError, false, componenttest.NewNopTelemetrySettings(), DefaultLogFunctions)
+			processor, err := NewProcessor([]contexts.ContextStatements{{Context: "log", Statements: []string{tt.statement}}}, ottl.IgnoreError, false, componenttest.NewNopTelemetrySettings(), DefaultLogFunctions)
 			require.NoError(t, err)
 
 			_, err = processor.ProcessLogs(t.Context(), td)
@@ -691,7 +691,7 @@ func Test_ProcessLogs_InferredLogContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.statement, func(t *testing.T) {
 			td := constructLogs()
-			processor, err := NewProcessor([]common.ContextStatements{{Context: "", Statements: []string{tt.statement}}}, ottl.IgnoreError, false, componenttest.NewNopTelemetrySettings(), DefaultLogFunctions)
+			processor, err := NewProcessor([]contexts.ContextStatements{{Context: "", Statements: []string{tt.statement}}}, ottl.IgnoreError, false, componenttest.NewNopTelemetrySettings(), DefaultLogFunctions)
 			require.NoError(t, err)
 
 			_, err = processor.ProcessLogs(t.Context(), td)
@@ -708,12 +708,12 @@ func Test_ProcessLogs_InferredLogContext(t *testing.T) {
 func Test_ProcessLogs_MixContext(t *testing.T) {
 	tests := []struct {
 		name              string
-		contextStatements []common.ContextStatements
+		contextStatements []contexts.ContextStatements
 		want              func(td plog.Logs)
 	}{
 		{
 			name: "set resource and then use",
-			contextStatements: []common.ContextStatements{
+			contextStatements: []contexts.ContextStatements{
 				{
 					Context: "resource",
 					Statements: []string{
@@ -735,7 +735,7 @@ func Test_ProcessLogs_MixContext(t *testing.T) {
 		},
 		{
 			name: "set scope and then use",
-			contextStatements: []common.ContextStatements{
+			contextStatements: []contexts.ContextStatements{
 				{
 					Context: "scope",
 					Statements: []string{
@@ -757,7 +757,7 @@ func Test_ProcessLogs_MixContext(t *testing.T) {
 		},
 		{
 			name: "order matters",
-			contextStatements: []common.ContextStatements{
+			contextStatements: []contexts.ContextStatements{
 				{
 					Context: "log",
 					Statements: []string{
@@ -777,7 +777,7 @@ func Test_ProcessLogs_MixContext(t *testing.T) {
 		},
 		{
 			name: "reuse context",
-			contextStatements: []common.ContextStatements{
+			contextStatements: []contexts.ContextStatements{
 				{
 					Context: "scope",
 					Statements: []string{
@@ -825,12 +825,12 @@ func Test_ProcessLogs_MixContext(t *testing.T) {
 func Test_ProcessLogs_InferredMixContext(t *testing.T) {
 	tests := []struct {
 		name              string
-		contextStatements []common.ContextStatements
+		contextStatements []contexts.ContextStatements
 		want              func(td plog.Logs)
 	}{
 		{
 			name: "set resource and then use",
-			contextStatements: []common.ContextStatements{
+			contextStatements: []contexts.ContextStatements{
 				{
 					Statements: []string{`set(resource.attributes["test"], "pass")`},
 				},
@@ -846,7 +846,7 @@ func Test_ProcessLogs_InferredMixContext(t *testing.T) {
 		},
 		{
 			name: "set scope and then use",
-			contextStatements: []common.ContextStatements{
+			contextStatements: []contexts.ContextStatements{
 				{
 					Statements: []string{`set(scope.attributes["test"], "pass")`},
 				},
@@ -862,7 +862,7 @@ func Test_ProcessLogs_InferredMixContext(t *testing.T) {
 		},
 		{
 			name: "order matters",
-			contextStatements: []common.ContextStatements{
+			contextStatements: []contexts.ContextStatements{
 				{
 					Statements: []string{`set(log.attributes["test"], "pass") where instrumentation_scope.attributes["test"] == "pass"`},
 				},
@@ -876,7 +876,7 @@ func Test_ProcessLogs_InferredMixContext(t *testing.T) {
 		},
 		{
 			name: "reuse context",
-			contextStatements: []common.ContextStatements{
+			contextStatements: []contexts.ContextStatements{
 				{
 					Statements: []string{`set(scope.attributes["test"], "pass")`},
 				},
@@ -915,7 +915,7 @@ func Test_ProcessLogs_InferredMixContext(t *testing.T) {
 func Test_ProcessLogs_ErrorMode(t *testing.T) {
 	tests := []struct {
 		statement string
-		context   common.ContextID
+		context   contexts.ContextID
 	}{
 		{
 			context: "resource",
@@ -931,7 +931,7 @@ func Test_ProcessLogs_ErrorMode(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(string(tt.context), func(t *testing.T) {
 			td := constructLogs()
-			processor, err := NewProcessor([]common.ContextStatements{{Context: tt.context, Statements: []string{`set(attributes["test"], ParseJSON("1"))`}}}, ottl.PropagateError, false, componenttest.NewNopTelemetrySettings(), DefaultLogFunctions)
+			processor, err := NewProcessor([]contexts.ContextStatements{{Context: tt.context, Statements: []string{`set(attributes["test"], ParseJSON("1"))`}}}, ottl.PropagateError, false, componenttest.NewNopTelemetrySettings(), DefaultLogFunctions)
 			require.NoError(t, err)
 
 			_, err = processor.ProcessLogs(t.Context(), td)
@@ -944,14 +944,14 @@ func Test_ProcessLogs_StatementsErrorMode(t *testing.T) {
 	tests := []struct {
 		name          string
 		errorMode     ottl.ErrorMode
-		statements    []common.ContextStatements
+		statements    []contexts.ContextStatements
 		want          func(td plog.Logs)
 		wantErrorWith string
 	}{
 		{
 			name:      "log: statements group with error mode",
 			errorMode: ottl.PropagateError,
-			statements: []common.ContextStatements{
+			statements: []contexts.ContextStatements{
 				{Statements: []string{`set(log.attributes["pass"], ParseJSON("1"))`}, ErrorMode: ottl.IgnoreError},
 				{Statements: []string{`set(log.attributes["test"], "pass") where log.body == "operationA"`}},
 			},
@@ -962,7 +962,7 @@ func Test_ProcessLogs_StatementsErrorMode(t *testing.T) {
 		{
 			name:      "log: statements group error mode does not affect default",
 			errorMode: ottl.PropagateError,
-			statements: []common.ContextStatements{
+			statements: []contexts.ContextStatements{
 				{Statements: []string{`set(log.attributes["pass"], ParseJSON("1"))`}, ErrorMode: ottl.IgnoreError},
 				{Statements: []string{`set(log.attributes["pass"], ParseJSON("true"))`}},
 			},
@@ -971,7 +971,7 @@ func Test_ProcessLogs_StatementsErrorMode(t *testing.T) {
 		{
 			name:      "resource: statements group with error mode",
 			errorMode: ottl.PropagateError,
-			statements: []common.ContextStatements{
+			statements: []contexts.ContextStatements{
 				{Statements: []string{`set(resource.attributes["pass"], ParseJSON("1"))`}, ErrorMode: ottl.IgnoreError},
 				{Statements: []string{`set(resource.attributes["test"], "pass")`}},
 			},
@@ -982,7 +982,7 @@ func Test_ProcessLogs_StatementsErrorMode(t *testing.T) {
 		{
 			name:      "resource: statements group error mode does not affect default",
 			errorMode: ottl.PropagateError,
-			statements: []common.ContextStatements{
+			statements: []contexts.ContextStatements{
 				{Statements: []string{`set(resource.attributes["pass"], ParseJSON("1"))`}, ErrorMode: ottl.IgnoreError},
 				{Statements: []string{`set(resource.attributes["pass"], ParseJSON("true"))`}},
 			},
@@ -991,7 +991,7 @@ func Test_ProcessLogs_StatementsErrorMode(t *testing.T) {
 		{
 			name:      "scope: statements group with error mode",
 			errorMode: ottl.PropagateError,
-			statements: []common.ContextStatements{
+			statements: []contexts.ContextStatements{
 				{Statements: []string{`set(scope.attributes["pass"], ParseJSON("1"))`}, ErrorMode: ottl.IgnoreError},
 				{Statements: []string{`set(scope.attributes["test"], "pass")`}},
 			},
@@ -1002,7 +1002,7 @@ func Test_ProcessLogs_StatementsErrorMode(t *testing.T) {
 		{
 			name:      "scope: statements group error mode does not affect default",
 			errorMode: ottl.PropagateError,
-			statements: []common.ContextStatements{
+			statements: []contexts.ContextStatements{
 				{Statements: []string{`set(scope.attributes["pass"], ParseJSON("1"))`}, ErrorMode: ottl.IgnoreError},
 				{Statements: []string{`set(scope.attributes["pass"], ParseJSON("true"))`}},
 			},
@@ -1034,12 +1034,12 @@ func Test_ProcessLogs_StatementsErrorMode(t *testing.T) {
 func Test_ProcessLogs_CacheAccess(t *testing.T) {
 	tests := []struct {
 		name       string
-		statements []common.ContextStatements
+		statements []contexts.ContextStatements
 		want       func(td plog.Logs)
 	}{
 		{
 			name: "resource:resource.cache",
-			statements: []common.ContextStatements{
+			statements: []contexts.ContextStatements{
 				{
 					Statements: []string{
 						`set(resource.cache["test"], "pass")`,
@@ -1053,9 +1053,9 @@ func Test_ProcessLogs_CacheAccess(t *testing.T) {
 		},
 		{
 			name: "resource:cache",
-			statements: []common.ContextStatements{
+			statements: []contexts.ContextStatements{
 				{
-					Context: common.Resource,
+					Context: contexts.Resource,
 					Statements: []string{
 						`set(cache["test"], "pass")`,
 						`set(attributes["test"], cache["test"])`,
@@ -1068,7 +1068,7 @@ func Test_ProcessLogs_CacheAccess(t *testing.T) {
 		},
 		{
 			name: "scope:scope.cache",
-			statements: []common.ContextStatements{
+			statements: []contexts.ContextStatements{
 				{
 					Statements: []string{
 						`set(scope.cache["test"], "pass")`,
@@ -1082,8 +1082,8 @@ func Test_ProcessLogs_CacheAccess(t *testing.T) {
 		},
 		{
 			name: "scope:cache",
-			statements: []common.ContextStatements{{
-				Context: common.Scope,
+			statements: []contexts.ContextStatements{{
+				Context: contexts.Scope,
 				Statements: []string{
 					`set(cache["test"], "pass")`,
 					`set(attributes["test"], cache["test"])`,
@@ -1095,7 +1095,7 @@ func Test_ProcessLogs_CacheAccess(t *testing.T) {
 		},
 		{
 			name: "log:log.cache",
-			statements: []common.ContextStatements{
+			statements: []contexts.ContextStatements{
 				{Statements: []string{
 					`set(log.cache["test"], "pass")`,
 					`set(log.attributes["test"], log.cache["test"])`,
@@ -1108,8 +1108,8 @@ func Test_ProcessLogs_CacheAccess(t *testing.T) {
 		},
 		{
 			name: "log:cache",
-			statements: []common.ContextStatements{{
-				Context: common.Log,
+			statements: []contexts.ContextStatements{{
+				Context: contexts.Log,
 				Statements: []string{
 					`set(cache["test"], "pass")`,
 					`set(attributes["test"], cache["test"])`,
@@ -1122,7 +1122,7 @@ func Test_ProcessLogs_CacheAccess(t *testing.T) {
 		},
 		{
 			name: "log:log.cache multiple entries",
-			statements: []common.ContextStatements{
+			statements: []contexts.ContextStatements{
 				{
 					Statements: []string{
 						`set(log.cache["test"], log.body)`,
@@ -1157,12 +1157,12 @@ func Test_ProcessLogs_CacheAccess(t *testing.T) {
 func Test_ProcessLogs_InferredContextFromConditions(t *testing.T) {
 	tests := []struct {
 		name              string
-		contextStatements []common.ContextStatements
+		contextStatements []contexts.ContextStatements
 		want              func(td plog.Logs)
 	}{
 		{
 			name: "inferring from statements",
-			contextStatements: []common.ContextStatements{
+			contextStatements: []contexts.ContextStatements{
 				{
 					Conditions: []string{`resource.attributes["test"] == nil`},
 					Statements: []string{`set(log.attributes["test"], "pass")`},
@@ -1175,7 +1175,7 @@ func Test_ProcessLogs_InferredContextFromConditions(t *testing.T) {
 		},
 		{
 			name: "inferring from conditions",
-			contextStatements: []common.ContextStatements{
+			contextStatements: []contexts.ContextStatements{
 				{
 					Conditions: []string{`log.attributes["test"] == nil`},
 					Statements: []string{`set(resource.attributes["test"], "pass")`},
@@ -1207,7 +1207,7 @@ func Test_ProcessLogs_InferredContextFromConditions(t *testing.T) {
 func Test_NewProcessor_ConditionsParse(t *testing.T) {
 	type testCase struct {
 		name          string
-		statements    []common.ContextStatements
+		statements    []contexts.ContextStatements
 		wantErrorWith string
 	}
 
@@ -1216,7 +1216,7 @@ func Test_NewProcessor_ConditionsParse(t *testing.T) {
 		contextsTests[ctx] = []testCase{
 			{
 				name: "inferred: condition with context",
-				statements: []common.ContextStatements{
+				statements: []contexts.ContextStatements{
 					{
 						Statements: []string{fmt.Sprintf(`set(%s.cache["test"], "pass")`, ctx)},
 						Conditions: []string{fmt.Sprintf(`%s.cache["test"] == ""`, ctx)},
@@ -1225,7 +1225,7 @@ func Test_NewProcessor_ConditionsParse(t *testing.T) {
 			},
 			{
 				name: "inferred: condition without context",
-				statements: []common.ContextStatements{
+				statements: []contexts.ContextStatements{
 					{
 						Statements: []string{fmt.Sprintf(`set(%s.cache["test"], "pass")`, ctx)},
 						Conditions: []string{`cache["test"] == ""`},
@@ -1235,9 +1235,9 @@ func Test_NewProcessor_ConditionsParse(t *testing.T) {
 			},
 			{
 				name: "context defined: condition without context",
-				statements: []common.ContextStatements{
+				statements: []contexts.ContextStatements{
 					{
-						Context:    common.ContextID(ctx),
+						Context:    contexts.ContextID(ctx),
 						Statements: []string{`set(cache["test"], "pass")`},
 						Conditions: []string{`cache["test"] == ""`},
 					},
@@ -1245,9 +1245,9 @@ func Test_NewProcessor_ConditionsParse(t *testing.T) {
 			},
 			{
 				name: "context defined: condition with context",
-				statements: []common.ContextStatements{
+				statements: []contexts.ContextStatements{
 					{
-						Context:    common.ContextID(ctx),
+						Context:    contexts.ContextID(ctx),
 						Statements: []string{`set(attributes["test"], "pass")`},
 						Conditions: []string{fmt.Sprintf(`%s.cache["test"] == ""`, ctx)},
 					},
@@ -1290,7 +1290,7 @@ func NewTestLogFuncFactory[K any]() ottl.Factory[K] {
 func Test_NewProcessor_NonDefaultFunctions(t *testing.T) {
 	type testCase struct {
 		name          string
-		statements    []common.ContextStatements
+		statements    []contexts.ContextStatements
 		wantErrorWith string
 		logFunctions  map[string]ottl.Factory[*ottllog.TransformContext]
 	}
@@ -1298,9 +1298,9 @@ func Test_NewProcessor_NonDefaultFunctions(t *testing.T) {
 	tests := []testCase{
 		{
 			name: "log funcs : statement with added log func",
-			statements: []common.ContextStatements{
+			statements: []contexts.ContextStatements{
 				{
-					Context:    common.ContextID("log"),
+					Context:    contexts.ContextID("log"),
 					Statements: []string{`set(cache["attr"], TestLogFunc())`},
 				},
 			},
@@ -1311,9 +1311,9 @@ func Test_NewProcessor_NonDefaultFunctions(t *testing.T) {
 		},
 		{
 			name: "log funcs : statement with missing log func",
-			statements: []common.ContextStatements{
+			statements: []contexts.ContextStatements{
 				{
-					Context:    common.ContextID("log"),
+					Context:    contexts.ContextID("log"),
 					Statements: []string{`set(cache["attr"], TestLogFunc())`},
 				},
 			},

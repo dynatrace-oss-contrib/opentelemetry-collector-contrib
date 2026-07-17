@@ -14,21 +14,21 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/contexts"
 )
 
 type Processor struct {
-	contexts []common.TracesConsumer
+	contexts []contexts.TracesConsumer
 	logger   *zap.Logger
 }
 
-func NewProcessor(contextStatements []common.ContextStatements, errorMode ottl.ErrorMode, settings component.TelemetrySettings, spanFunctions map[string]ottl.Factory[*ottlspan.TransformContext], spanEventFunctions map[string]ottl.Factory[*ottlspanevent.TransformContext]) (*Processor, error) {
-	pc, err := common.NewTraceParserCollection(settings, common.WithSpanParser(spanFunctions), common.WithSpanEventParser(spanEventFunctions), common.WithTraceErrorMode(errorMode))
+func NewProcessor(contextStatements []contexts.ContextStatements, errorMode ottl.ErrorMode, settings component.TelemetrySettings, spanFunctions map[string]ottl.Factory[*ottlspan.TransformContext], spanEventFunctions map[string]ottl.Factory[*ottlspanevent.TransformContext]) (*Processor, error) {
+	pc, err := contexts.NewTraceParserCollection(settings, contexts.WithSpanParser(spanFunctions), contexts.WithSpanEventParser(spanEventFunctions), contexts.WithTraceErrorMode(errorMode))
 	if err != nil {
 		return nil, err
 	}
 
-	contexts := make([]common.TracesConsumer, len(contextStatements))
+	contexts := make([]contexts.TracesConsumer, len(contextStatements))
 	var errors error
 	for i, cs := range contextStatements {
 		context, err := pc.ParseContextStatements(cs)

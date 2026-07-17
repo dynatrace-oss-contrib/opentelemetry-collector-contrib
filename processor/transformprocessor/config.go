@@ -21,7 +21,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlprofile"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/contexts"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metadata"
 )
 
@@ -36,10 +36,10 @@ type Config struct {
 	// The default value is `ignore`.
 	ErrorMode ottl.ErrorMode `mapstructure:"error_mode"`
 
-	TraceStatements   []common.ContextStatements `mapstructure:"trace_statements"`
-	MetricStatements  []common.ContextStatements `mapstructure:"metric_statements"`
-	LogStatements     []common.ContextStatements `mapstructure:"log_statements"`
-	ProfileStatements []common.ContextStatements `mapstructure:"profile_statements"`
+	TraceStatements   []contexts.ContextStatements `mapstructure:"trace_statements"`
+	MetricStatements  []contexts.ContextStatements `mapstructure:"metric_statements"`
+	LogStatements     []contexts.ContextStatements `mapstructure:"log_statements"`
+	ProfileStatements []contexts.ContextStatements `mapstructure:"profile_statements"`
 
 	FlattenData bool `mapstructure:"flatten_data"`
 	logger      *zap.Logger
@@ -55,8 +55,8 @@ type Config struct {
 
 // Unmarshal is used internally by mapstructure to parse the transformprocessor configuration (Config),
 // adding support to structured and flat configuration styles.
-// When the flat configuration style is used, all statements are grouped into a common.ContextStatements
-// object, with empty [common.ContextStatements.Context] value.
+// When the flat configuration style is used, all statements are grouped into a ottlcontext.ContextStatements
+// object, with empty [contexts.ContextStatements.Context] value.
 // On the other hand, structured configurations are parsed following the mapstructure Config format.
 //
 // Example of flat configuration:
@@ -77,7 +77,7 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 		return nil
 	}
 
-	contextStatementsFields := map[string]*[]common.ContextStatements{
+	contextStatementsFields := map[string]*[]contexts.ContextStatements{
 		"trace_statements":   &c.TraceStatements,
 		"metric_statements":  &c.MetricStatements,
 		"log_statements":     &c.LogStatements,
@@ -143,7 +143,7 @@ func (c *Config) Validate() error {
 	var errors error
 
 	if len(c.TraceStatements) > 0 {
-		pc, err := common.NewTraceParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithSpanParser(c.spanFunctions), common.WithSpanEventParser(c.spanEventFunctions))
+		pc, err := contexts.NewTraceParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, contexts.WithSpanParser(c.spanFunctions), contexts.WithSpanEventParser(c.spanEventFunctions))
 		if err != nil {
 			return err
 		}
@@ -156,7 +156,7 @@ func (c *Config) Validate() error {
 	}
 
 	if len(c.MetricStatements) > 0 {
-		pc, err := common.NewMetricParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithMetricParser(c.metricFunctions), common.WithDataPointParser(c.dataPointFunctions), common.WithExemplarParser(c.exemplarFunctions))
+		pc, err := contexts.NewMetricParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, contexts.WithMetricParser(c.metricFunctions), contexts.WithDataPointParser(c.dataPointFunctions), contexts.WithExemplarParser(c.exemplarFunctions))
 		if err != nil {
 			return err
 		}
@@ -169,7 +169,7 @@ func (c *Config) Validate() error {
 	}
 
 	if len(c.LogStatements) > 0 {
-		pc, err := common.NewLogParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithLogParser(c.logFunctions))
+		pc, err := contexts.NewLogParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, contexts.WithLogParser(c.logFunctions))
 		if err != nil {
 			return err
 		}
@@ -182,7 +182,7 @@ func (c *Config) Validate() error {
 	}
 
 	if len(c.ProfileStatements) > 0 {
-		pc, err := common.NewProfileParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithProfileParser(c.profileFunctions))
+		pc, err := contexts.NewProfileParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, contexts.WithProfileParser(c.profileFunctions))
 		if err != nil {
 			return err
 		}

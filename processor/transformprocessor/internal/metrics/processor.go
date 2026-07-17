@@ -15,21 +15,21 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlexemplar"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/contexts"
 )
 
 type Processor struct {
-	contexts []common.MetricsConsumer
+	contexts []contexts.MetricsConsumer
 	logger   *zap.Logger
 }
 
-func NewProcessor(contextStatements []common.ContextStatements, errorMode ottl.ErrorMode, settings component.TelemetrySettings, metricFunctions map[string]ottl.Factory[*ottlmetric.TransformContext], dataPointFunctions map[string]ottl.Factory[*ottldatapoint.TransformContext], exemplarFunctions map[string]ottl.Factory[*ottlexemplar.TransformContext]) (*Processor, error) {
-	pc, err := common.NewMetricParserCollection(settings, common.WithMetricParser(metricFunctions), common.WithDataPointParser(dataPointFunctions), common.WithExemplarParser(exemplarFunctions), common.WithMetricErrorMode(errorMode))
+func NewProcessor(contextStatements []contexts.ContextStatements, errorMode ottl.ErrorMode, settings component.TelemetrySettings, metricFunctions map[string]ottl.Factory[*ottlmetric.TransformContext], dataPointFunctions map[string]ottl.Factory[*ottldatapoint.TransformContext], exemplarFunctions map[string]ottl.Factory[*ottlexemplar.TransformContext]) (*Processor, error) {
+	pc, err := contexts.NewMetricParserCollection(settings, contexts.WithMetricParser(metricFunctions), contexts.WithDataPointParser(dataPointFunctions), contexts.WithExemplarParser(exemplarFunctions), contexts.WithMetricErrorMode(errorMode))
 	if err != nil {
 		return nil, err
 	}
 
-	contexts := make([]common.MetricsConsumer, len(contextStatements))
+	contexts := make([]contexts.MetricsConsumer, len(contextStatements))
 	var errors error
 	for i, cs := range contextStatements {
 		context, err := pc.ParseContextStatements(cs)
