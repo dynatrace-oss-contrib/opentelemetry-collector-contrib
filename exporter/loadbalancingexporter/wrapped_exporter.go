@@ -5,6 +5,7 @@ package loadbalancingexporter // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 
@@ -16,11 +17,16 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 )
 
-// wrappedExporter is an exporter that waits for the data processing to complete before shutting down.
+// wrappedExporter is an exporter that waits for the data processing to complete before shutting
+// down, for as long as the shutdown context allows. If that context expires first the component is
+// shut down anyway and the deadline error returned alongside, so a caller that must not cut off an
+// in-flight export has to pass a context at least as generous as its export timeout.
 // consumeWG has to be incremented explicitly by the consumer of the wrapped exporter.
 type wrappedExporter struct {
 	component.Component
 	consumeWG sync.WaitGroup
+
+	endpoint string
 
 	// we store the attributes here for both cases, to avoid new allocations on the hot path
 	endpointAttr attribute.Set
@@ -32,6 +38,7 @@ func newWrappedExporter(exp component.Component, identifier string) *wrappedExpo
 	ea := attribute.String("endpoint", identifier)
 	return &wrappedExporter{
 		Component:    exp,
+		endpoint:     identifier,
 		endpointAttr: attribute.NewSet(ea),
 		successAttr:  attribute.NewSet(ea, attribute.Bool("success", true)),
 		failureAttr:  attribute.NewSet(ea, attribute.Bool("success", false)),
@@ -39,8 +46,30 @@ func newWrappedExporter(exp component.Component, identifier string) *wrappedExpo
 }
 
 func (we *wrappedExporter) Shutdown(ctx context.Context) error {
-	we.consumeWG.Wait()
-	return we.Component.Shutdown(ctx)
+	// consumeWG may never reach zero if a consumer to this backend is stuck, so the wait respects
+	// ctx. WaitGroup has no cancellable wait, so this goroutine then outlives Shutdown: one leaked
+	// goroutine per permanently wedged backend, preferable to blocking the collector's shutdown.
+	done := make(chan struct{})
+
+	go func() {
+		we.consumeWG.Wait()
+		close(done)
+	}()
+
+	var waitErr error
+	select {
+	case <-done:
+	case <-ctx.Done():
+		// select picks at random when both are ready, so re-check the drain before blaming the
+		// deadline for data that in fact made it out.
+		select {
+		case <-done:
+		default:
+			waitErr = fmt.Errorf("shutting down %q with data still in flight: %w", we.endpoint, ctx.Err())
+		}
+	}
+
+	return errors.Join(waitErr, we.Component.Shutdown(ctx))
 }
 
 func (we *wrappedExporter) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {

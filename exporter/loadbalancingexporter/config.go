@@ -56,6 +56,21 @@ type Config struct {
 	// Keys are encoded as "name=value|name=value|" in the order configured. Missing attributes are encoded as "name=|".
 	// Non-string values are deterministically stringified.
 	RoutingAttributes []string `mapstructure:"routing_attributes"`
+
+	// ExporterAddTimeout bounds how long the load balancer waits for a new backend exporter to be
+	// created and started when the resolver reports a backend change. A backend that is not ready
+	// in time is left out of the hash ring, so its share of the data goes to the backends that are
+	// ready; it joins the ring as soon as it finishes starting. While no backend is ready at all
+	// the wait continues past this timeout, since giving up would leave nothing to route to.
+	// Zero waits indefinitely. Defaults to 5s.
+	ExporterAddTimeout time.Duration `mapstructure:"exporter_add_timeout"`
+
+	// ExporterShutdownTimeout bounds how long the load balancer waits for a removed backend exporter
+	// to drain in-flight data and shut down when the resolver reports a backend change. On expiry
+	// the backend is shut down regardless, so this should be at least as long as the configured
+	// export timeout to avoid cutting off in-flight exports. Zero waits indefinitely.
+	// Defaults to 30s.
+	ExporterShutdownTimeout time.Duration `mapstructure:"exporter_shutdown_timeout"`
 }
 
 // Validate checks if the exporter configuration is valid.
@@ -67,6 +82,14 @@ func (c *Config) Validate() error {
 
 	if c.RoutingKey != attrRoutingStr && len(c.RoutingAttributes) > 0 {
 		return fmt.Errorf("routing_attributes can only be used when routing_key is %q; got %q. Remove routing_attributes or set routing_key to %q", attrRoutingStr, c.RoutingKey, attrRoutingStr)
+	}
+
+	if c.ExporterAddTimeout < 0 {
+		return fmt.Errorf("exporter_add_timeout must be non-negative, got %s", c.ExporterAddTimeout)
+	}
+
+	if c.ExporterShutdownTimeout < 0 {
+		return fmt.Errorf("exporter_shutdown_timeout must be non-negative, got %s", c.ExporterShutdownTimeout)
 	}
 
 	return nil

@@ -84,6 +84,14 @@ $defs:
 description: Config defines configuration for the exporter.
 type: object
 properties:
+  exporter_add_timeout:
+    description: ExporterAddTimeout bounds how long the load balancer waits for a new backend exporter to be created and started when the resolver reports a backend change. A backend that is not ready in time is left out of the hash ring, so its share of the data goes to the backends that are ready; it joins the ring as soon as it finishes starting. While no backend is ready at all the wait continues past this timeout, since giving up would leave nothing to route to. Zero waits indefinitely. Defaults to 5s.
+    type: string
+    format: duration
+  exporter_shutdown_timeout:
+    description: ExporterShutdownTimeout bounds how long the load balancer waits for a removed backend exporter to drain in-flight data and shut down when the resolver reports a backend change. On expiry the backend is shut down regardless, so this should be at least as long as the configured export timeout to avoid cutting off in-flight exports. Zero waits indefinitely. Defaults to 30s.
+    type: string
+    format: duration
   protocol:
     $ref: protocol
   resolver:

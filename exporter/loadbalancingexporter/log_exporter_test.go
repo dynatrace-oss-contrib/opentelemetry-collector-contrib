@@ -183,7 +183,7 @@ func TestConsumeLogs(t *testing.T) {
 	require.NoError(t, err)
 
 	// pre-load an exporter here, so that we don't use the actual OTLP exporter
-	lb.addMissingExporters(t.Context(), []string{"endpoint-1"})
+	preloadExporters(lb, "endpoint-1")
 	lb.res = &mockResolver{
 		triggerCallbacks: true,
 		onResolve: func(_ context.Context) ([]string, error) {
@@ -310,7 +310,7 @@ func TestConsumeLogsUnexpectedExporterType(t *testing.T) {
 	require.NoError(t, err)
 
 	// pre-load an exporter here, so that we don't use the actual OTLP exporter
-	lb.addMissingExporters(t.Context(), []string{"endpoint-1"})
+	preloadExporters(lb, "endpoint-1")
 	lb.res = &mockResolver{
 		triggerCallbacks: true,
 		onResolve: func(_ context.Context) ([]string, error) {
@@ -349,7 +349,7 @@ func TestLogBatchWithTwoServices(t *testing.T) {
 	require.NoError(t, err)
 
 	// pre-load an exporter here, so that we don't use the actual OTLP exporter
-	lb.addMissingExporters(t.Context(), []string{"endpoint-1"})
+	preloadExporters(lb, "endpoint-1")
 	p.loadBalancer = lb
 
 	err = p.Start(t.Context(), componenttest.NewNopHost())
@@ -389,7 +389,7 @@ func TestLogsWithMissingServiceName(t *testing.T) {
 	require.NoError(t, err)
 
 	// pre-load an exporter here, so that we don't use the actual OTLP exporter
-	lb.addMissingExporters(t.Context(), []string{"endpoint-1"})
+	preloadExporters(lb, "endpoint-1")
 	p.loadBalancer = lb
 
 	err = p.Start(t.Context(), componenttest.NewNopHost())
@@ -531,8 +531,8 @@ func TestRollingUpdatesWhenConsumeLogs(t *testing.T) {
 
 	counter1 := &atomic.Int64{}
 	counter2 := &atomic.Int64{}
-	id1 := "127.0.0.1:4317"
-	id2 := "127.0.0.2:4317"
+	id1 := "127.0.0.1"
+	id2 := "127.0.0.2"
 	unreachableCh := make(chan struct{})
 	defaultExporters := map[string]*wrappedExporter{
 		id1: newWrappedExporter(newMockLogsExporter(func(_ context.Context, _ plog.Logs) error {
@@ -541,11 +541,11 @@ func TestRollingUpdatesWhenConsumeLogs(t *testing.T) {
 			// simulate an unreachable backend
 			<-unreachableCh
 			return nil
-		}), id1),
+		}), endpointWithPort(id1)),
 		id2: newWrappedExporter(newMockLogsExporter(func(_ context.Context, _ plog.Logs) error {
 			counter2.Add(1)
 			return nil
-		}), id2),
+		}), endpointWithPort(id2)),
 	}
 
 	// test
@@ -555,14 +555,7 @@ func TestRollingUpdatesWhenConsumeLogs(t *testing.T) {
 		require.NoError(t, p.Shutdown(t.Context()))
 	}()
 	// ensure using default exporters
-	lb.updateLock.Lock()
-	lb.exporters = defaultExporters
-	lb.updateLock.Unlock()
-	lb.res.onChange(func(_ []string) {
-		lb.updateLock.Lock()
-		lb.exporters = defaultExporters
-		lb.updateLock.Unlock()
-	})
+	pinExporters(lb, defaultExporters)
 
 	ctx, cancel := context.WithCancel(t.Context())
 	var waitWG sync.WaitGroup
@@ -1027,7 +1020,7 @@ func TestConsumeLogsWithServiceRouting(t *testing.T) {
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
-	lb.addMissingExporters(t.Context(), []string{"endpoint-1", "endpoint-2"})
+	preloadExporters(lb, "endpoint-1", "endpoint-2")
 	p.loadBalancer = lb
 
 	err = p.Start(t.Context(), componenttest.NewNopHost())
@@ -1068,7 +1061,7 @@ func TestConsumeLogsWithResourceRouting(t *testing.T) {
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
-	lb.addMissingExporters(t.Context(), []string{"endpoint-1", "endpoint-2"})
+	preloadExporters(lb, "endpoint-1", "endpoint-2")
 	p.loadBalancer = lb
 
 	err = p.Start(t.Context(), componenttest.NewNopHost())
@@ -1112,7 +1105,7 @@ func TestConsumeLogsWithAttributeRouting(t *testing.T) {
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
-	lb.addMissingExporters(t.Context(), []string{"endpoint-1", "endpoint-2"})
+	preloadExporters(lb, "endpoint-1", "endpoint-2")
 	p.loadBalancer = lb
 
 	err = p.Start(t.Context(), componenttest.NewNopHost())
@@ -1156,7 +1149,7 @@ func TestConsumeLogsConsistentRouting(t *testing.T) {
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
-	lb.addMissingExporters(t.Context(), []string{"endpoint-1", "endpoint-2", "endpoint-3"})
+	preloadExporters(lb, "endpoint-1", "endpoint-2", "endpoint-3")
 	p.loadBalancer = lb
 
 	err = p.Start(t.Context(), componenttest.NewNopHost())
@@ -1203,7 +1196,7 @@ func TestConsumeLogsWithResourceRoutingConsistent(t *testing.T) {
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
-	lb.addMissingExporters(t.Context(), []string{"endpoint-1", "endpoint-2", "endpoint-3"})
+	preloadExporters(lb, "endpoint-1", "endpoint-2", "endpoint-3")
 	p.loadBalancer = lb
 
 	err = p.Start(t.Context(), componenttest.NewNopHost())
@@ -1247,7 +1240,7 @@ func TestConsumeLogsMixedServiceNames(t *testing.T) {
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
-	lb.addMissingExporters(t.Context(), []string{"endpoint-1"})
+	preloadExporters(lb, "endpoint-1")
 	p.loadBalancer = lb
 
 	err = p.Start(t.Context(), componenttest.NewNopHost())
@@ -1302,7 +1295,7 @@ func TestConsumeLogsTripleEndpoint(t *testing.T) {
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
-	lb.addMissingExporters(t.Context(), []string{"endpoint-1", "endpoint-2", "endpoint-3"})
+	preloadExporters(lb, "endpoint-1", "endpoint-2", "endpoint-3")
 	lb.res = &mockResolver{
 		triggerCallbacks: true,
 		onResolve: func(_ context.Context) ([]string, error) {
@@ -1362,7 +1355,7 @@ func TestConsumeLogsExportFailure(t *testing.T) {
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
-	lb.addMissingExporters(t.Context(), []string{"endpoint-1"})
+	preloadExporters(lb, "endpoint-1")
 	lb.res = &mockResolver{
 		triggerCallbacks: true,
 		onResolve: func(_ context.Context) ([]string, error) {
@@ -1397,7 +1390,7 @@ func TestConsumeLogsEmptyBatch(t *testing.T) {
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
-	lb.addMissingExporters(t.Context(), []string{"endpoint-1"})
+	preloadExporters(lb, "endpoint-1")
 	p.loadBalancer = lb
 
 	err = p.Start(t.Context(), componenttest.NewNopHost())
@@ -1534,7 +1527,7 @@ func TestConsumeLogsWithTraceIDRouting(t *testing.T) {
 	p, err := newLogsExporter(ts, cfg)
 	require.NoError(t, err)
 
-	lb.addMissingExporters(t.Context(), []string{"endpoint-1", "endpoint-2"})
+	preloadExporters(lb, "endpoint-1", "endpoint-2")
 	p.loadBalancer = lb
 
 	err = p.Start(t.Context(), componenttest.NewNopHost())
@@ -1588,7 +1581,7 @@ func TestE2ERoutingIsolation(t *testing.T) {
 	p, err := newLogsExporter(ts, cfg)
 	require.NoError(t, err)
 
-	lb.addMissingExporters(t.Context(), endpoints)
+	preloadExporters(lb, endpoints...)
 	lb.res = &mockResolver{
 		triggerCallbacks: true,
 		onResolve: func(_ context.Context) ([]string, error) {
@@ -1688,7 +1681,7 @@ func TestE2EResourceRoutingIsolation(t *testing.T) {
 	p, err := newLogsExporter(ts, cfg)
 	require.NoError(t, err)
 
-	lb.addMissingExporters(t.Context(), endpoints)
+	preloadExporters(lb, endpoints...)
 	lb.res = &mockResolver{
 		triggerCallbacks: true,
 		onResolve: func(_ context.Context) ([]string, error) {
@@ -1762,7 +1755,7 @@ func TestDataIntegrityThroughRouting(t *testing.T) {
 	p, err := newLogsExporter(ts, cfg)
 	require.NoError(t, err)
 
-	lb.addMissingExporters(t.Context(), endpoints)
+	preloadExporters(lb, endpoints...)
 	lb.res = &mockResolver{
 		triggerCallbacks: true,
 		onResolve: func(_ context.Context) ([]string, error) {
@@ -1937,7 +1930,7 @@ func TestDataIntegrityNoCrossContaminationBetweenServices(t *testing.T) {
 	p, err := newLogsExporter(ts, cfg)
 	require.NoError(t, err)
 
-	lb.addMissingExporters(t.Context(), endpoints)
+	preloadExporters(lb, endpoints...)
 	lb.res = &mockResolver{
 		triggerCallbacks: true,
 		onResolve: func(_ context.Context) ([]string, error) {
@@ -2025,7 +2018,7 @@ func TestDataIntegrityLogCountPreserved(t *testing.T) {
 			p, err := newLogsExporter(ts, cfg)
 			require.NoError(t, err)
 
-			lb.addMissingExporters(t.Context(), endpoints)
+			preloadExporters(lb, endpoints...)
 			lb.res = &mockResolver{
 				triggerCallbacks: true,
 				onResolve: func(_ context.Context) ([]string, error) {
@@ -2089,7 +2082,7 @@ func TestConsumeLogsMissingServiceMultipleEndpoints(t *testing.T) {
 	p, err := newLogsExporter(ts, cfg)
 	require.NoError(t, err)
 
-	lb.addMissingExporters(t.Context(), endpoints)
+	preloadExporters(lb, endpoints...)
 	lb.res = &mockResolver{
 		triggerCallbacks: true,
 		onResolve: func(_ context.Context) ([]string, error) {
@@ -2367,7 +2360,7 @@ func TestConsumeLogsPartialBackendFailure(t *testing.T) {
 	p, err := newLogsExporter(ts, cfg)
 	require.NoError(t, err)
 
-	lb.addMissingExporters(t.Context(), endpoints)
+	preloadExporters(lb, endpoints...)
 	lb.res = &mockResolver{
 		triggerCallbacks: true,
 		onResolve: func(_ context.Context) ([]string, error) {
@@ -2462,7 +2455,7 @@ func TestHighCardinalityAttributeRouting(t *testing.T) {
 	p, err := newLogsExporter(ts, cfg)
 	require.NoError(t, err)
 
-	lb.addMissingExporters(t.Context(), endpoints)
+	preloadExporters(lb, endpoints...)
 	lb.res = &mockResolver{
 		triggerCallbacks: true,
 		onResolve: func(_ context.Context) ([]string, error) {

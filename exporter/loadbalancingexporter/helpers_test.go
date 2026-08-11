@@ -170,3 +170,32 @@ func BenchmarkMergeLogs_X500(b *testing.B) {
 func BenchmarkMergeLogs_X1000(b *testing.B) {
 	benchMergeLogs(b, 1000)
 }
+
+// preloadExporters installs a started exporter for each endpoint without going through the
+// resolver, so that tests do not fall back to the real OTLP exporter. It runs only the add half
+// of onBackendChanges: no endpoint is removed and the ring is not rebuilt, so successive calls
+// accumulate exporters even though each one replaces the desired set.
+func preloadExporters(lb *loadBalancer, endpoints ...string) {
+	lb.awaitExporterBatch(lb.launchExporterBatch(endpoints))
+}
+
+// pinExporters replaces the load balancer's backend set and re-pins it on every resolution, so
+// that a rolling-update test can drive the resolver without the real OTLP exporter being built.
+//
+// The keys have to be endpoints as the resolver spells them, because that is the key space the
+// ring is built from. The map is installed as-is: the ring is left to the resolver callback that
+// onBackendChanges registered.
+func pinExporters(lb *loadBalancer, exporters map[string]*wrappedExporter) {
+	install := func() {
+		lb.updateLock.Lock()
+		defer lb.updateLock.Unlock()
+		lb.exporters = exporters
+	}
+
+	install()
+	lb.res.onChange(func([]string) { install() })
+}
+
+func newNopMockExporter() *wrappedExporter {
+	return newWrappedExporter(mockComponent{}, "mock")
+}

@@ -248,29 +248,24 @@ func TestOnBackendChanges(t *testing.T) {
 }
 
 func TestRemoveExtraExporters(t *testing.T) {
-	// prepare
 	ts, tb := getTelemetryAssets(t)
-	cfg := simpleConfig()
 	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
 		return newNopMockExporter(), nil
 	}
 
-	p, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
-	require.NotNil(t, p)
+	p, err := newLoadBalancer(ts.Logger, simpleConfig(), componentFactory, tb)
 	require.NoError(t, err)
 
-	p.addMissingExporters(t.Context(), []string{"endpoint-1", "endpoint-2"})
-	resolved := []string{"endpoint-1"}
+	p.onBackendChanges([]string{"endpoint-1", "endpoint-2"})
+	require.Len(t, p.exporters, 2)
 
-	// test
-	p.removeExtraExporters(t.Context(), resolved)
+	p.onBackendChanges([]string{"endpoint-1"})
 
-	// verify
 	assert.Len(t, p.exporters, 1)
-	assert.NotContains(t, p.exporters, endpointWithPort("endpoint-2"))
+	assert.NotContains(t, p.exporters, "endpoint-2")
 }
 
-func TestAddMissingExporters(t *testing.T) {
+func TestLaunchExporterBatch_InstallsMissingExporter(t *testing.T) {
 	// prepare
 	ts, tb := getTelemetryAssets(t)
 	cfg := simpleConfig()
@@ -293,18 +288,18 @@ func TestAddMissingExporters(t *testing.T) {
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
-	p.exporters["endpoint-1:4317"] = newNopMockExporter()
+	p.exporters["endpoint-1"] = newNopMockExporter()
 	resolved := []string{"endpoint-1", "endpoint-2"}
 
 	// test
-	p.addMissingExporters(t.Context(), resolved)
+	preloadExporters(p, resolved...)
 
 	// verify
 	assert.Len(t, p.exporters, 2)
-	assert.Contains(t, p.exporters, "endpoint-2:4317")
+	assert.Contains(t, p.exporters, "endpoint-2")
 }
 
-func TestFailedToAddMissingExporters(t *testing.T) {
+func TestLaunchExporterBatch_FactoryFails_LeavesExporterUninstalled(t *testing.T) {
 	// prepare
 	ts, tb := getTelemetryAssets(t)
 	cfg := simpleConfig()
@@ -328,15 +323,15 @@ func TestFailedToAddMissingExporters(t *testing.T) {
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
-	p.exporters["endpoint-1:4317"] = newNopMockExporter()
+	p.exporters["endpoint-1"] = newNopMockExporter()
 	resolved := []string{"endpoint-1", "endpoint-2"}
 
 	// test
-	p.addMissingExporters(t.Context(), resolved)
+	preloadExporters(p, resolved...)
 
 	// verify
 	assert.Len(t, p.exporters, 1)
-	assert.Contains(t, p.exporters, "endpoint-1:4317")
+	assert.Contains(t, p.exporters, "endpoint-1")
 }
 
 func TestEndpointWithPort(t *testing.T) {
@@ -381,7 +376,7 @@ func TestFailedExporterInRing(t *testing.T) {
 	// this behavior. As the solution would require more locks/syncs/checks, we should probably wait to see
 	// if this is really a problem in the real world
 	resEndpoint := "endpoint-2"
-	delete(p.exporters, endpointWithPort(resEndpoint))
+	delete(p.exporters, resEndpoint)
 
 	// sanity check
 	require.Contains(t, p.res.(*staticResolver).endpoints, resEndpoint)
@@ -438,8 +433,4 @@ func TestNewLoadBalancerInvalidServiceAwsResolver(t *testing.T) {
 	// verify
 	assert.Nil(t, p)
 	assert.True(t, clientcmd.IsConfigurationInvalid(err) || errors.Is(err, errNoServiceName))
-}
-
-func newNopMockExporter() *wrappedExporter {
-	return newWrappedExporter(mockComponent{}, "mock")
 }

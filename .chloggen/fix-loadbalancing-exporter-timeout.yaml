@@ -1,0 +1,47 @@
+# Use this changelog template to create an entry for release notes.
+
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: bug_fix
+
+# The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
+component: exporter/load_balancing
+
+# A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: Stop a slow or hanging backend from blocking all data flow on a backend change.
+
+# Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
+issues: [8843]
+
+# (Optional) One or more lines of additional information to render under the primary note.
+# These lines will be padded with 2 spaces and then inserted directly into the document.
+# Use pipe (|) for multiline entries.
+subtext: |
+  Creating and starting new backend exporters on a resolver change used to happen while
+  holding the load balancer's write lock, so a slow or unresponsive backend (e.g. blocked
+  on a network mount while loading TLS material) stalled ConsumeTraces/Metrics/Logs for
+  every backend, not just the new one, with no way to bound the wait.
+
+  New exporters are now created and started without holding the lock. Two new options,
+  `exporter_add_timeout` (default 5s) and `exporter_shutdown_timeout` (default 30s), bound
+  how long the load balancer waits for a backend to be added or shut down before moving on;
+  set either to 0 to wait indefinitely. A backend that isn't ready in time no longer blocks
+  the others: it is left out of the hash ring, so its share of the data goes to the backends
+  that are ready, and it joins the ring as soon as it finishes starting, unless it has since
+  been removed from the resolved backend set or the load balancer has shut down. While no
+  backend is ready at all the wait continues past `exporter_add_timeout`, since giving up
+  would leave nothing to route to. A backend whose own Shutdown never observes context
+  cancellation can no longer block the load balancer's shutdown either.
+
+  Note that a backend leaving the resolved set is now drained for at most
+  `exporter_shutdown_timeout` before its connection is torn down. If you configure an export
+  `timeout` (or retries) longer than that, raise `exporter_shutdown_timeout` to match,
+  otherwise a backend change can cut off an in-flight export.
+
+# If your change doesn't affect end users or the exported elements of any package,
+# you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
+# Optional: The change log or logs in which this entry should be included.
+# e.g. '[user]' or '[user, api]'
+# Include 'user' if the change is relevant to end users.
+# Include 'api' if there is a change to a library API.
+# Default: '[user]'
+change_logs: [user]

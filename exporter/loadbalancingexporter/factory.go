@@ -49,7 +49,9 @@ func createDefaultConfig() component.Config {
 		Protocol: Protocol{
 			OTLP: *otlpDefaultCfg,
 		},
-		QueueSettings: configoptional.Default(exporterhelper.NewDefaultQueueConfig()),
+		QueueSettings:           configoptional.Default(exporterhelper.NewDefaultQueueConfig()),
+		ExporterAddTimeout:      defaultExporterAddTimeout,
+		ExporterShutdownTimeout: defaultExporterShutdownTimeout,
 	}
 }
 

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -83,6 +84,29 @@ func TestConfigValidate(t *testing.T) {
 				"",
 				attrRoutingStr,
 			),
+		},
+		{
+			// zero is the documented "wait indefinitely" setting, not an unset field:
+			// createDefaultConfig supplies the defaults.
+			name: "zero exporter timeouts are valid",
+			cfg: Config{
+				ExporterAddTimeout:      0,
+				ExporterShutdownTimeout: 0,
+			},
+		},
+		{
+			name: "negative exporter add timeout is invalid",
+			cfg: Config{
+				ExporterAddTimeout: -1 * time.Second,
+			},
+			expectedErr: "exporter_add_timeout must be non-negative, got -1s",
+		},
+		{
+			name: "negative exporter shutdown timeout is invalid",
+			cfg: Config{
+				ExporterShutdownTimeout: -1 * time.Second,
+			},
+			expectedErr: "exporter_shutdown_timeout must be non-negative, got -1s",
 		},
 	}
 

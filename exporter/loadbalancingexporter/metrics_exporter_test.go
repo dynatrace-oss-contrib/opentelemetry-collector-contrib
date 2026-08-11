@@ -501,7 +501,7 @@ func TestConsumeMetrics_SingleEndpoint(t *testing.T) {
 			require.NoError(t, err)
 			require.NotNil(t, lb)
 
-			lb.addMissingExporters(t.Context(), []string{"endpoint-1"})
+			preloadExporters(lb, "endpoint-1")
 			lb.res = &mockResolver{
 				triggerCallbacks: true,
 				onResolve: func(_ context.Context) ([]string, error) {
@@ -574,7 +574,7 @@ func TestConsumeMetrics_SingleEndpointNoServiceName(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, lb)
 
-	lb.addMissingExporters(t.Context(), []string{"endpoint-1"})
+	preloadExporters(lb, "endpoint-1")
 	lb.res = &mockResolver{
 		triggerCallbacks: true,
 		onResolve: func(_ context.Context) ([]string, error) {
@@ -690,7 +690,7 @@ func TestConsumeMetrics_TripleEndpoint(t *testing.T) {
 					return newMockMetricsExporter(sink3.ConsumeMetrics), nil
 				}
 
-				t.Fatalf("invalid endpoint %s", endpoint)
+				t.Errorf("invalid endpoint %s", endpoint)
 				return nil, errors.New("invalid endpoint")
 			}
 
@@ -698,7 +698,7 @@ func TestConsumeMetrics_TripleEndpoint(t *testing.T) {
 			require.NoError(t, err)
 			require.NotNil(t, lb)
 
-			lb.addMissingExporters(t.Context(), []string{"endpoint-1", "endpoint-2", "endpoint-3"})
+			preloadExporters(lb, "endpoint-1", "endpoint-2", "endpoint-3")
 			lb.res = &mockResolver{
 				triggerCallbacks: true,
 				onResolve: func(_ context.Context) ([]string, error) {
@@ -867,8 +867,8 @@ func TestConsumeMetricsUnexpectedExporterType(t *testing.T) {
 	require.NoError(t, err)
 
 	// pre-load an exporter here, so that we don't use the actual OTLP exporter
-	lb.addMissingExporters(t.Context(), []string{"endpoint-1"})
-	lb.addMissingExporters(t.Context(), []string{"endpoint-2"})
+	preloadExporters(lb, "endpoint-1")
+	preloadExporters(lb, "endpoint-2")
 	lb.res = &mockResolver{
 		triggerCallbacks: true,
 		onResolve: func(_ context.Context) ([]string, error) {
@@ -909,7 +909,7 @@ func TestBatchWithTwoMetrics(t *testing.T) {
 	err = p.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
-	lb.addMissingExporters(t.Context(), []string{"endpoint-1"})
+	preloadExporters(lb, "endpoint-1")
 
 	td := twoServicesWithSameMetricName()
 
@@ -1007,13 +1007,13 @@ func TestRollingUpdatesWhenConsumeMetrics(t *testing.T) {
 	counter1 := &atomic.Int64{}
 	counter2 := &atomic.Int64{}
 	defaultExporters := map[string]*wrappedExporter{
-		"127.0.0.1:4317": newWrappedExporter(newMockMetricsExporter(func(_ context.Context, _ pmetric.Metrics) error {
+		"127.0.0.1": newWrappedExporter(newMockMetricsExporter(func(_ context.Context, _ pmetric.Metrics) error {
 			counter1.Add(1)
 			// simulate an unreachable backend
 			time.Sleep(10 * time.Second)
 			return nil
 		}), "127.0.0.1"),
-		"127.0.0.2:4317": newWrappedExporter(newMockMetricsExporter(func(_ context.Context, _ pmetric.Metrics) error {
+		"127.0.0.2": newWrappedExporter(newMockMetricsExporter(func(_ context.Context, _ pmetric.Metrics) error {
 			counter2.Add(1)
 			return nil
 		}), "127.0.0.2"),
@@ -1026,14 +1026,7 @@ func TestRollingUpdatesWhenConsumeMetrics(t *testing.T) {
 		require.NoError(t, p.Shutdown(t.Context()))
 	}()
 	// ensure using default exporters
-	lb.updateLock.Lock()
-	lb.exporters = defaultExporters
-	lb.updateLock.Unlock()
-	lb.res.onChange(func(_ []string) {
-		lb.updateLock.Lock()
-		lb.exporters = defaultExporters
-		lb.updateLock.Unlock()
-	})
+	pinExporters(lb, defaultExporters)
 
 	ctx, cancel := context.WithCancel(t.Context())
 	// keep consuming metrics every 2ms

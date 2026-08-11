@@ -133,7 +133,7 @@ func TestConsumeTraces(t *testing.T) {
 	assert.Equal(t, traceIDRouting, p.routingKey)
 
 	// pre-load an exporter here, so that we don't use the actual OTLP exporter
-	lb.addMissingExporters(t.Context(), []string{"endpoint-1"})
+	preloadExporters(lb, "endpoint-1")
 	lb.res = &mockResolver{
 		triggerCallbacks: true,
 		onResolve: func(_ context.Context) ([]string, error) {
@@ -192,7 +192,7 @@ func TestConsumeTracesByID_MultipleTraceIDs(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, traceIDRouting, p.routingKey)
 
-	lb.addMissingExporters(t.Context(), endpoints)
+	preloadExporters(lb, endpoints...)
 	lb.res = &mockResolver{
 		triggerCallbacks: true,
 		onResolve: func(context.Context) ([]string, error) {
@@ -346,8 +346,8 @@ func TestConsumeTracesServiceBased(t *testing.T) {
 	assert.Equal(t, svcRouting, p.routingKey)
 
 	// pre-load an exporter here, so that we don't use the actual OTLP exporter
-	lb.addMissingExporters(t.Context(), []string{"endpoint-1"})
-	lb.addMissingExporters(t.Context(), []string{"endpoint-2"})
+	preloadExporters(lb, "endpoint-1")
+	preloadExporters(lb, "endpoint-2")
 	lb.res = &mockResolver{
 		triggerCallbacks: true,
 		onResolve: func(_ context.Context) ([]string, error) {
@@ -647,7 +647,7 @@ func TestConsumeTracesUnexpectedExporterType(t *testing.T) {
 	require.NoError(t, err)
 
 	// pre-load an exporter here, so that we don't use the actual OTLP exporter
-	lb.addMissingExporters(t.Context(), []string{"endpoint-1"})
+	preloadExporters(lb, "endpoint-1")
 	lb.res = &mockResolver{
 		triggerCallbacks: true,
 		onResolve: func(_ context.Context) ([]string, error) {
@@ -688,7 +688,7 @@ func TestBatchWithTwoTraces(t *testing.T) {
 	err = p.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
-	lb.addMissingExporters(t.Context(), []string{"endpoint-1"})
+	preloadExporters(lb, "endpoint-1")
 
 	td := simpleTraces()
 	appendSimpleTraceWithID(td.ResourceSpans().AppendEmpty(), [16]byte{2, 3, 4, 5})
@@ -817,8 +817,8 @@ func TestRollingUpdatesWhenConsumeTraces(t *testing.T) {
 
 	counter1 := &atomic.Int64{}
 	counter2 := &atomic.Int64{}
-	id1 := "127.0.0.1:4317"
-	id2 := "127.0.0.2:4317"
+	id1 := "127.0.0.1"
+	id2 := "127.0.0.2"
 	unreachableCh := make(chan struct{})
 	defaultExporters := map[string]*wrappedExporter{
 		id1: newWrappedExporter(newMockTracesExporter(func(_ context.Context, _ ptrace.Traces) error {
@@ -827,11 +827,11 @@ func TestRollingUpdatesWhenConsumeTraces(t *testing.T) {
 			// simulate an unreachable backend
 			<-unreachableCh
 			return nil
-		}), id1),
+		}), endpointWithPort(id1)),
 		id2: newWrappedExporter(newMockTracesExporter(func(_ context.Context, _ ptrace.Traces) error {
 			counter2.Add(1)
 			return nil
-		}), id2),
+		}), endpointWithPort(id2)),
 	}
 
 	// test
@@ -841,14 +841,7 @@ func TestRollingUpdatesWhenConsumeTraces(t *testing.T) {
 		require.NoError(t, p.Shutdown(t.Context()))
 	}()
 	// ensure using default exporters
-	lb.updateLock.Lock()
-	lb.exporters = defaultExporters
-	lb.updateLock.Unlock()
-	lb.res.onChange(func(_ []string) {
-		lb.updateLock.Lock()
-		lb.exporters = defaultExporters
-		lb.updateLock.Unlock()
-	})
+	pinExporters(lb, defaultExporters)
 
 	ctx, cancel := context.WithCancel(t.Context())
 	var waitWG sync.WaitGroup
